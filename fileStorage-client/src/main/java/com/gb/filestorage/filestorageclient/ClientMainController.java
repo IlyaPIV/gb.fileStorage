@@ -3,7 +3,7 @@ package com.gb.filestorage.filestorageclient;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
-public class HelloController {
+public class ClientMainController {
     @FXML
     private Label welcomeText;
 
