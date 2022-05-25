@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <HBox prefHeight="750.0" prefWidth="1000.0">
+         <children>
+            <Pane id="client_side" prefHeight="750.0" prefWidth="450.0">
+               <children>
+                  <TreeView fx:id="client_tree" layoutY="1.0" prefHeight="740.0" prefWidth="440.0" />
+               </children>
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Pane>
+            <Pane id="network_side" prefHeight="750.0" prefWidth="100.0" HBox.hgrow="ALWAYS">
+               <children>
+                  <BorderPane prefHeight="740.0" prefWidth="90.0">
+                     <center>
+                        <VBox alignment="CENTER" prefHeight="740.0" prefWidth="90.0" BorderPane.alignment="CENTER">
+                           <children>
+                              <Button fx:id="button_upload" alignment="CENTER_RIGHT" mnemonicParsing="false" prefHeight="29.0" prefWidth="74.0" text="&gt;&gt;" textAlignment="RIGHT">
+                                 <VBox.margin>
+                                    <Insets bottom="15.0" top="15.0" />
+                                 </VBox.margin>
+                                 <padding>
+                                    <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                                 </padding>
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font>
+                              </Button>
+                              <ProgressIndicator progress="0.0">
+                                 <VBox.margin>
+                                    <Insets bottom="20.0" top="20.0" />
+                                 </VBox.margin>
+                              </ProgressIndicator>
+                              <Button fx:id="button_download" alignment="CENTER_LEFT" mnemonicParsing="false" prefHeight="29.0" prefWidth="74.0" text="&lt;&lt;">
+                                 <VBox.margin>
+                                    <Insets bottom="15.0" top="15.0" />
+                                 </VBox.margin>
+                                 <padding>
+                                    <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                                 </padding>
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font>
+                              </Button>
+                           </children>
+                        </VBox>
+                     </center>
+                     <bottom>
+                        <Button cancelButton="true" mnemonicParsing="false" prefHeight="55.0" prefWidth="90.0" text="EXIT" textAlignment="CENTER" textFill="#863535" BorderPane.alignment="CENTER">
+                           <font>
+                              <Font name="Arial Bold Italic" size="24.0" />
+                           </font>
+                        </Button>
+                     </bottom>
+                  </BorderPane>
+               </children>
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Pane>
+            <Pane id="server_side" prefHeight="750.0" prefWidth="450.0">
+               <children>
+                  <VBox alignment="CENTER" prefHeight="740.0" prefWidth="440.0">
+                     <children>
+                        <TreeView prefHeight="690.0" prefWidth="440.0">
+                           <VBox.margin>
+                              <Insets bottom="5.0" />
+                           </VBox.margin>
+                        </TreeView>
+                        <HBox alignment="CENTER" maxHeight="30.0" minHeight="30.0" prefHeight="30.0" prefWidth="440.0" VBox.vgrow="ALWAYS">
+                           <children>
+                              <Button fx:id="button_share" alignment="CENTER" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Share" textAlignment="CENTER" HBox.hgrow="ALWAYS">
+                                 <HBox.margin>
+                                    <Insets left="15.0" right="15.0" />
+                                 </HBox.margin>
+                                 <padding>
+                                    <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                                 </padding>
+                                 <font>
+                                    <Font size="14.0" />
+                                 </font>
+                              </Button>
+                              <Button fx:id="button_rename" alignment="CENTER" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Rename" textAlignment="CENTER" HBox.hgrow="ALWAYS">
+                                 <HBox.margin>
+                                    <Insets left="15.0" right="15.0" />
+                                 </HBox.margin>
+                                 <padding>
+                                    <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                                 </padding>
+                                 <font>
+                                    <Font size="14.0" />
+                                 </font>
+                              </Button>
+                              <Button fx:id="button_delete" alignment="CENTER" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Delete" textAlignment="CENTER" HBox.hgrow="ALWAYS">
+                                 <HBox.margin>
+                                    <Insets left="15.0" right="15.0" />
+                                 </HBox.margin>
+                                 <font>
+                                    <Font size="14.0" />
+                                 </font>
+                                 <padding>
+                                    <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                                 </padding>
+                              </Button>
+                           </children>
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                        </HBox>
+                        <TextField alignment="CENTER" editable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO">
+                           <VBox.margin>
+                              <Insets top="5.0" />
+                           </VBox.margin>
+                        </TextField>
+                     </children>
+                  </VBox>
+               </children>
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Pane>
+         </children>
+      </HBox>
+   </children>
+</AnchorPane>
