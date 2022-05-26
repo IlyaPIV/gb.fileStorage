@@ -16,8 +16,7 @@ public class ClienMainApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(ClienMainApplication.class.getResource("clientMain-view.fxml"));
 
 
-
-        Scene scene = new Scene(fxmlLoader.load(), 1000, 750);
+        Scene scene = new Scene(fxmlLoader.load(), 1200, 780);
         stage.setTitle("GeekBrains: File storage project");
         scene.getStylesheets().add(getClass().getResource("css/StyleMainWindow.css").toExternalForm());
         stage.setScene(scene);

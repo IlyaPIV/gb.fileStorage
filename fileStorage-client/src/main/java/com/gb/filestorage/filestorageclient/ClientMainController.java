@@ -1,11 +1,22 @@
 package com.gb.filestorage.filestorageclient;
 
+import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 
 public class ClientMainController implements Initializable {
@@ -24,11 +35,155 @@ public class ClientMainController implements Initializable {
 
     @FXML
     public Button button_download;
+    @FXML
+    public ComboBox<String> disksBox;
 
-    @Override
+    @FXML
+    public TextField pathField;
+
+    @FXML
+    public TableView<ClientFileInfo> clientFilesTable;
+
+    @Override @FXML
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        prepareClientTable();
+        prepareDisksBox();
+
+        updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+    }
+
+    /**
+    * подготавливает таблицу файлов на клиентской стороне
+     */
+    private void prepareClientTable() {
+
+        TableColumn<ClientFileInfo,String> fileTypeColumn = new TableColumn<>();
+        fileTypeColumn.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().getType().getName()));
+        fileTypeColumn.setPrefWidth(20);
+
+        TableColumn<ClientFileInfo,String> fileNameColumn = new TableColumn<>("Name");
+        fileNameColumn.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().getFilename()));
+        fileNameColumn.setPrefWidth(290);
+
+
+        TableColumn<ClientFileInfo, Long> fileSizeColumn = new TableColumn<>("Size");
+        fileSizeColumn.setCellValueFactory(param ->
+                new SimpleObjectProperty<>(param.getValue().getSize()));
+        fileSizeColumn.setPrefWidth(105);
+        fileSizeColumn.setCellFactory(column -> {
+            return new TableCell<ClientFileInfo, Long>(){
+                @Override
+                protected void updateItem(Long item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (item==null || empty) {
+                        setText(null);
+                        setStyle("");
+                    } else {
+                        String text = String.format("%,d bytes", item);
+                        if (item== -1L) text = "\t[DIR]";
+                        setText(text);
+                    }
+                }
+            };
+        });
+
+        TableColumn<ClientFileInfo, String> fileDataColumn = new TableColumn<>("Date");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        fileDataColumn.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().getLastTimeModified().format(dtf)));
+        fileDataColumn.setPrefWidth(120);
+
+
+
+        clientFilesTable.getColumns().addAll(fileTypeColumn,fileNameColumn, fileSizeColumn, fileDataColumn);
+        clientFilesTable.getSortOrder().add(fileTypeColumn);
+
+        clientFilesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                if (mouseEvent.getClickCount() == 2) {
+                    if (clientFilesTable.getSelectionModel().getSelectedItem()!=null) {
+                        Path path = Paths.get(pathField.getText()).resolve(clientFilesTable.getSelectionModel().getSelectedItem().getFilename());
+                        if (Files.isDirectory(path)) {
+                            updateClientList(path);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * подготавливает список дирректорий
+     */
+    private void prepareDisksBox(){
+        disksBox.getItems().clear();
+        for (Path p : FileSystems.getDefault().getRootDirectories()) {
+            disksBox.getItems().add(p.toString().trim());
+        }
+        disksBox.getSelectionModel().select(0);
 
     }
 
+    /**
+    * обновляет таблицу файлов на клиенте данными из указанной директории
+    */
+    private void updateClientList(Path path){
 
+        try {
+            pathField.setText(path.normalize().toAbsolutePath().toString());
+            clientFilesTable.getItems().clear();
+            clientFilesTable.getItems().addAll(Files.list(path).map(ClientFileInfo::new).toList());
+            clientFilesTable.sort();
+        } catch (IOException e) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось обновить список", ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    /**
+     * обработчик события выхода из программы
+     */
+    @FXML
+    private void btnExitAction(ActionEvent actionEvent){
+        Platform.exit();
+    }
+
+    /**
+     * обработчик события поднятия вверх по каталогу (в родительский каталог)
+     */
+    @FXML
+    private void btnPathUpAction(ActionEvent actionEvent) {
+        Path upperPath = Paths.get(pathField.getText()).getParent();
+        if(upperPath != null) {
+            updateClientList(upperPath);
+        }
+    }
+
+    /**
+     * обработчик события выбора новой дирректории
+     */
+    @FXML
+    private void selectDiskAction(ActionEvent actionEvent) {
+        ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
+        updateClientList(Paths.get(element.getSelectionModel().getSelectedItem()));
+    }
+
+    /**
+     * возвращает имя выбранного файла на стороне клиента
+     * @return
+     */
+    private String getSelectedFileName() {
+        return clientFilesTable.getSelectionModel().getSelectedItem().getFilename();
+    }
+
+    /**
+     * возвращает текущую дирректорию на стороне клиента
+     * @return
+     */
+    private String getCurrentPath() {
+        return pathField.getText();
+    }
 }
