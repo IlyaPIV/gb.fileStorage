@@ -49,6 +49,11 @@ public class Server {
      */
     private void stopServer(){
 
+        for (ClientHandler ch:
+             clients) {
+            ch.setAuthenticated(false); //позже можно заменить на команду принудительного отключения (отправка сообщения на клиент)
+        }
+
         try {
             clientSocket.close();
         } catch (IOException e) {
@@ -66,20 +71,37 @@ public class Server {
 
     }
 
+    /**
+     * запуск создания нового подключения клиента к серверу
+     * @throws IOException
+     */
     private void clientConnection() throws IOException{
         clientSocket = serverSettings.getServerSocket().accept();
         new ClientHandler(this, clientSocket);
     }
 
+    /**
+     * возвращает серверные настройки
+     * @return
+     */
     public ServerSettings getServerSettings() {
         return serverSettings;
     }
 
+    /**
+     * добавление пользовательского соединения к серверу
+     * @param ch
+     */
     public void connectUser(ClientHandler ch){
         clients.add(ch);
     }
 
+    /**
+     * закрытие пользовательского соединения и удаление его из списка подключений
+     * @param ch
+     */
     public void disconnectUser(ClientHandler ch){
         clients.remove(ch);
+
     }
 }
