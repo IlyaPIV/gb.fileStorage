@@ -1,12 +1,12 @@
+package server;
+
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 public class ServerSettings {
 
-
     public static final int SERVER_PORT = 8189;
-
     private final Server server;
 
     private ServerSocket serverSocket;

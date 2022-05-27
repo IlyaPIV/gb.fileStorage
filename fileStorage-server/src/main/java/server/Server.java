@@ -1,9 +1,12 @@
+package server;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
+
 
 public class Server {
 
@@ -22,9 +25,9 @@ public class Server {
                 clientConnection();
             }
         } catch (IOException e) {
-
+            e.printStackTrace();
+            //логирование
         } finally {
-            System.out.println("Server is stopped...");
             stopServer();
         }
     }
@@ -37,9 +40,12 @@ public class Server {
         this.serverSettings = new ServerSettings(this);
         this.serverSettings.setServerSocket(new ServerSocket(ServerSettings.SERVER_PORT));
         this.serverSettings.setExecutorService(Executors.newCachedThreadPool());
+
+        this.clients = new CopyOnWriteArrayList<>();
+
         //logger
 
-        //clients list
+        //auth service
 
     }
 
@@ -49,25 +55,25 @@ public class Server {
      */
     private void stopServer(){
 
+        //под вопросом итератор
         for (ClientHandler ch:
              clients) {
-            ch.setAuthenticated(false); //позже можно заменить на команду принудительного отключения (отправка сообщения на клиент)
+            ch.disconnectFromServer();
         }
 
         try {
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
-            //    ServerSettings.LOGGER.log(Level.SEVERE,e.getMessage());
+            //    server.ServerSettings.LOGGER.log(Level.SEVERE,e.getMessage());
         }
 
         try {
             serverSettings.getServerSocket().close();
         } catch (IOException e) {
             e.printStackTrace();
-        //    ServerSettings.LOGGER.log(Level.SEVERE,e.getMessage());
+        //    server.ServerSettings.LOGGER.log(Level.SEVERE,e.getMessage());
         }
-
 
     }
 
@@ -93,6 +99,7 @@ public class Server {
      * @param ch
      */
     public void connectUser(ClientHandler ch){
+        System.out.println("New connection is activated.");
         clients.add(ch);
     }
 
@@ -102,6 +109,5 @@ public class Server {
      */
     public void disconnectUser(ClientHandler ch){
         clients.remove(ch);
-
     }
 }

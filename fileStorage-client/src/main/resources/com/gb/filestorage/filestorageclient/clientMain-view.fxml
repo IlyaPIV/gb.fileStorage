@@ -158,7 +158,7 @@
                         <Insets />
                      </VBox.margin>
                   </HBox>
-                  <TextField alignment="CENTER" focusTraversable="false" editable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO" VBox.vgrow="NEVER" HBox.hgrow="ALWAYS">
+                  <TextField fx:id ="infoField" alignment="CENTER" focusTraversable="false" editable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO" VBox.vgrow="NEVER" HBox.hgrow="ALWAYS">
                      <VBox.margin>
                         <Insets top="5.0" />
                      </VBox.margin>

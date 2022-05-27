@@ -1,6 +1,7 @@
 package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
+import com.gb.filestorage.filestorageclient.network.NetworkConnection;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,11 +17,15 @@ import java.net.URL;
 import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 
 public class ClientMainController implements Initializable {
 
+
+    private NetworkConnection connection;
+
+    @FXML
+    private TextField infoField;
     @FXML
     public Button button_share;
 
@@ -50,6 +55,32 @@ public class ClientMainController implements Initializable {
         prepareDisksBox();
 
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+
+        connectToServer();
+    }
+
+    /**
+     * выводит текст серверного сообщения в инфо поле
+     * @param text текст сообщения
+     */
+    public void setInfoText(String text){
+        infoField.setText(text.toUpperCase());
+    }
+
+    /**
+     * инициирует настройки сетевого подключения и пробует установить соединение с сервером
+     */
+    private void connectToServer() {
+        if (this.connection == null || this.connection.isSocketClosed()) {
+            this.connection = new NetworkConnection(this, "login", "pass");
+
+            boolean connected = connection.connectToServer();
+            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
+
+            connection.startWorkingThreadWithServer();
+        }
+
+        connection.tryToAuthOnServer();
     }
 
     /**
@@ -148,6 +179,7 @@ public class ClientMainController implements Initializable {
      */
     @FXML
     private void btnExitAction(ActionEvent actionEvent){
+        connection.closeConnection();
         Platform.exit();
     }
 

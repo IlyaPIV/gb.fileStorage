@@ -21,7 +21,6 @@ public class ClienMainApplication extends Application {
         scene.getStylesheets().add(getClass().getResource("css/StyleMainWindow.css").toExternalForm());
         stage.setScene(scene);
 
-
         stage.show();
     }
 
