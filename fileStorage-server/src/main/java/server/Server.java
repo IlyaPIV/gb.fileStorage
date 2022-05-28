@@ -13,6 +13,8 @@ public class Server {
     private ServerSettings serverSettings;
     private Socket clientSocket;
 
+    private FilesStorage filesStorage;
+
     private List<ClientHandler> clients;
 
     public Server(){
@@ -92,6 +94,14 @@ public class Server {
      */
     public ServerSettings getServerSettings() {
         return serverSettings;
+    }
+
+    /**
+     * возвращает модуль работы с файловым хранилищем
+     * @return FileStorage - файловое хранилище
+     */
+    public FilesStorage getFilesStorage() {
+        return filesStorage;
     }
 
     /**

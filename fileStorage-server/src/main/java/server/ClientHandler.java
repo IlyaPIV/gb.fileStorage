@@ -1,10 +1,9 @@
 package server;
 
 import constants.ConnectionCommands;
+import serverFiles.ServerFile;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -16,6 +15,9 @@ public class ClientHandler {
     private Socket socket;
     private DataInputStream ins;
     private DataOutputStream ous;
+
+    private BufferedInputStream bfins;
+    private BufferedOutputStream bfous;
 
     private boolean authenticated;
     private String login;
@@ -56,6 +58,8 @@ public class ClientHandler {
         this.serverLogger = ServerSettings.LOGGER;
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
+        this.bfins = new BufferedInputStream(socket.getInputStream());
+        this.bfous = new BufferedOutputStream(socket.getOutputStream());
     }
 
     /**
@@ -68,6 +72,7 @@ public class ClientHandler {
 
         try {
             socket.close();
+            System.out.println("Connection with user is closed");
         } catch (IOException e) {
             e.printStackTrace();
            //serverLogger.log(Level.SEVERE, "Problems with disconnection user "+login);
@@ -179,6 +184,14 @@ public class ClientHandler {
 
             if (msg.startsWith(ConnectionCommands.FILE_SHARE)) {
                 break;
+            }
+
+            if (msg.equals(ConnectionCommands.GET_FILES_LIST)) {
+                FilesStorage serverFS = server.getFilesStorage();
+                for (ServerFile sf:
+                     serverFS.getFilesOnServer(0)) {
+                    System.out.println(sf);
+                }
             }
         }
 

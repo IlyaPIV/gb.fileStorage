@@ -113,11 +113,10 @@
             </BorderPane>
             <VBox alignment="CENTER" prefHeight="740.0" prefWidth="540.0" HBox.hgrow="ALWAYS">
                <children>
-                  <TreeView fx:id="server_tree" prefHeight="690.0" prefWidth="440.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                     <VBox.margin>
-                        <Insets bottom="5.0" />
-                     </VBox.margin>
-                  </TreeView>
+                  <TableView fx:id="serverFilesTable" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+                     <columns>
+                     </columns>
+                  </TableView>
                   <HBox alignment="CENTER" maxHeight="30.0" minHeight="30.0" prefHeight="30.0" prefWidth="440.0" VBox.vgrow="NEVER" HBox.hgrow="ALWAYS">
                      <children>
                         <Button fx:id="button_share" focusTraversable="false" alignment="CENTER" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Share" textAlignment="CENTER" HBox.hgrow="ALWAYS">

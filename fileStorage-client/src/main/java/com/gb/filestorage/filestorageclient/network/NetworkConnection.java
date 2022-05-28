@@ -26,7 +26,7 @@ public class NetworkConnection {
     }
 
 
-    private void setAuthenticated(boolean auth){
+    public void setAuthenticated(boolean auth){
         this.authenticated = auth;
     }
 
@@ -79,8 +79,7 @@ public class NetworkConnection {
     }
 
     public void startWorkingThreadWithServer() {
-
-        new Thread(()->{
+        Thread wthrd = new Thread(()->{
            try {
                //аутентификация на сервере
                authenticationOnServer();
@@ -91,7 +90,7 @@ public class NetworkConnection {
            } catch (IOException e) {
                e.printStackTrace();
            } finally {
-               setAuthenticated(false);
+//               closeConnection();
                try {
                    this.settings.closeSocket();
                } catch (IOException e) {
@@ -99,7 +98,9 @@ public class NetworkConnection {
                    throw new RuntimeException(e);
                }
            }
-        }).start();
+        });
+//        wthrd.setDaemon(true);
+        wthrd.start();
     }
 
 
@@ -120,6 +121,8 @@ public class NetworkConnection {
     private void authenticationOnServer() throws IOException{
         while (true) {
             String msg = settings.ins.readUTF();
+
+            System.out.println("auth msg:" + msg);
 
             if (msg.equals(ConnectionCommands.END)) break;
 
@@ -145,6 +148,7 @@ public class NetworkConnection {
                 client.setInfoText(serverMsg);
                 if (result) {
                     setAuthenticated(true);
+                    break;
                 }
 
             }
@@ -156,8 +160,11 @@ public class NetworkConnection {
      * @throws IOException
      */
     private void workingOnServer() throws IOException{
+        System.out.println("working thread");
         while (true) {
             String msg = settings.ins.readUTF();
+
+            System.out.println("work msg:" + msg);
 
             if (msg.equals(ConnectionCommands.END)) break;
 

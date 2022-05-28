@@ -1,8 +1,6 @@
 package com.gb.filestorage.filestorageclient.network;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 public class ClientSettings {
@@ -14,6 +12,9 @@ public class ClientSettings {
 
     public DataInputStream ins;
     public DataOutputStream ous;
+
+    public BufferedInputStream bfins;
+    public BufferedOutputStream bfous;
 
     public Socket getSocket() {
         return socket;
@@ -30,6 +31,8 @@ public class ClientSettings {
     public void setDataStreams() throws IOException {
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
+        this.bfins = new BufferedInputStream(socket.getInputStream());
+        this.bfous = new BufferedOutputStream(socket.getOutputStream());
     }
 
 

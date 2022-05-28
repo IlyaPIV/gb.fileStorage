@@ -13,6 +13,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
+import serverFiles.ServerFile;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,6 +23,7 @@ import java.util.ResourceBundle;
 
 
 public class ClientMainController implements Initializable {
+
 
 
     private Stage mainWindow;
@@ -53,21 +55,23 @@ public class ClientMainController implements Initializable {
     @FXML
     public TableView<ClientFileInfo> clientFilesTable;
 
+    @FXML
+    public TableView<ServerFile> serverFilesTable;
+
     @Override @FXML
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
         prepareClientTable();
         prepareDisksBox();
-
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
-
+        prepareServerTable();
         connectToServer();
 
         Platform.runLater(()->{
             mainWindow = (Stage) infoField.getScene().getWindow();
             mainWindow.setOnCloseRequest(windowEvent -> {
                 if (connection.isSocketInit() && !connection.isSocketClosed()) {
-                    connection.sendMsgToServer(ConnectionCommands.END);
+                    connection.closeConnection();
                 }
             });
         });
@@ -161,6 +165,47 @@ public class ClientMainController implements Initializable {
     }
 
     /**
+     * подготавливает таблицу файлов на сервере
+     */
+    private void prepareServerTable(){
+        TableColumn<ServerFile,String> fileNameColumn = new TableColumn<>("Name");
+        fileNameColumn.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().getFileName()));
+        fileNameColumn.setPrefWidth(305);
+
+
+        TableColumn<ServerFile, Long> fileSizeColumn = new TableColumn<>("Size");
+        fileSizeColumn.setCellValueFactory(param ->
+                new SimpleObjectProperty<>(param.getValue().getSize()));
+        fileSizeColumn.setPrefWidth(110);
+        fileSizeColumn.setCellFactory(column -> {
+            return new TableCell<ServerFile, Long>(){
+                @Override
+                protected void updateItem(Long item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (item==null || empty) {
+                        setText(null);
+                        setStyle("");
+                    } else {
+                        String text = String.format("%,d bytes", item);
+                        setText(text);
+                    }
+                }
+            };
+        });
+
+        TableColumn<ServerFile, String> fileDataColumn = new TableColumn<>("Date");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        fileDataColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastUpdate().format(dtf)));
+        fileDataColumn.setPrefWidth(120);
+
+
+
+        serverFilesTable.getColumns().addAll(fileNameColumn, fileSizeColumn, fileDataColumn);
+        serverFilesTable.getSortOrder().add(fileNameColumn);
+    }
+
+    /**
      * подготавливает список дирректорий
      */
     private void prepareDisksBox(){
@@ -194,6 +239,7 @@ public class ClientMainController implements Initializable {
     @FXML
     private void btnExitAction(ActionEvent actionEvent){
         connection.closeConnection();
+
         Platform.exit();
     }
 
@@ -239,7 +285,15 @@ public class ClientMainController implements Initializable {
      */
     @FXML
     public void sendFileToServer(ActionEvent actionEvent) {
-        Path fileFullPath = Paths.get(getCurrentPath()).resolve(getSelectedFileName());
-        connection.fileSendToServer(fileFullPath);
+
+        if (clientFilesTable.getSelectionModel().getSelectedItem()!=null) {
+            Path fileFullPath = Paths.get(pathField.getText()).resolve(clientFilesTable.getSelectionModel().getSelectedItem().getFilename());
+
+            if (Files.isDirectory(fileFullPath)) {
+                setInfoText("Can't send directory. Please, choose a file.");
+            } else {
+                connection.fileSendToServer(fileFullPath);
+            }
+        }
     }
 }
