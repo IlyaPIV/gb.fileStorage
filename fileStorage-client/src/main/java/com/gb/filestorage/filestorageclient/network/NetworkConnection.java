@@ -5,6 +5,7 @@ import constants.ConnectionCommands;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.Path;
 
 public class NetworkConnection {
 
@@ -40,6 +41,14 @@ public class NetworkConnection {
 
 
     /**
+     * проверяет создан ли соккет подключения
+     * @return true если соккет инициализирован, false - если равен NULL
+     */
+    public boolean isSocketInit(){
+        return settings.getSocket() != null;
+    }
+
+    /**
      * попытка инициализации сетевого подключения к серверу
      * @return true в случае успешного подключения
      */
@@ -60,7 +69,7 @@ public class NetworkConnection {
      * процедура отправки сообщений на сервер
      * @param msg - форматированная строка сообщения на сервер
      */
-    private void sendMsgToServer(String msg) {
+    public void sendMsgToServer(String msg) {
         try {
             settings.ous.writeUTF(msg);
         } catch (IOException e) {
@@ -156,11 +165,60 @@ public class NetworkConnection {
                 Thread.currentThread().interrupt();
                 break;
             }
+
+            if (msg.startsWith(ConnectionCommands.FILE_UPLOAD)) {
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_DOWNLOAD)) {
+                break;
+            }
+
         }
     }
 
-
+    /**
+     * закрытие сетевого подключения с сервером
+     */
     public void closeConnection() {
         sendMsgToServer(ConnectionCommands.END);
+    }
+
+    /**
+     * отправка файла на сервер
+     * @param fileFullPath - адрес файла на клиенте
+     */
+    public void fileSendToServer(Path fileFullPath) {
+        sendMsgToServer(ConnectionCommands.FILE_UPLOAD);
+    }
+
+    /**
+     * получение файла с сервера
+     * @param directory папка на клиенте куда скачать файл
+     * @param filename имя загружаемого файла
+     */
+    public void fileGetFromServer(Path directory, String filename) {
+        sendMsgToServer(ConnectionCommands.FILE_DOWNLOAD);
+    }
+
+    /**
+     * переименовывает файл на сервер
+     */
+    public void fileOnServerRename(){
+        sendMsgToServer(ConnectionCommands.FILE_RENAME);
+    }
+
+    /**
+     * удаляет файл на сервере (пользовательиский экземпляр)
+     */
+    public void fileOnServerDelete(){
+        sendMsgToServer(ConnectionCommands.FILE_DELETE);
+    }
+
+    /**
+     * получает ссылку на файл на сервере
+     */
+    public void fileOnServerShare(){
+        sendMsgToServer(ConnectionCommands.FILE_SHARE);
     }
 }

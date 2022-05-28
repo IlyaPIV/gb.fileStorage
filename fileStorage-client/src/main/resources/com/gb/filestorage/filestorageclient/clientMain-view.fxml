@@ -70,7 +70,7 @@
                <center>
                   <VBox alignment="CENTER" prefHeight="740.0" prefWidth="90.0" BorderPane.alignment="CENTER" HBox.hgrow="NEVER">
                      <children>
-                        <Button fx:id="button_upload" focusTraversable="false" alignment="CENTER_RIGHT" mnemonicParsing="false" prefHeight="29.0" prefWidth="74.0" text="&gt;&gt;" textAlignment="RIGHT">
+                        <Button fx:id="button_upload" focusTraversable="false" alignment="CENTER_RIGHT" mnemonicParsing="false" prefHeight="29.0" prefWidth="74.0" text="&gt;&gt;" textAlignment="RIGHT" onAction="#sendFileToServer">
                            <VBox.margin>
                               <Insets bottom="15.0" top="15.0" />
                            </VBox.margin>

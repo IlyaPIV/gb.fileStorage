@@ -2,6 +2,7 @@ package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
 import com.gb.filestorage.filestorageclient.network.NetworkConnection;
+import constants.ConnectionCommands;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -11,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,7 +24,9 @@ import java.util.ResourceBundle;
 public class ClientMainController implements Initializable {
 
 
+    private Stage mainWindow;
     private NetworkConnection connection;
+
 
     @FXML
     private TextField infoField;
@@ -51,12 +55,22 @@ public class ClientMainController implements Initializable {
 
     @Override @FXML
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
         prepareClientTable();
         prepareDisksBox();
 
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
 
         connectToServer();
+
+        Platform.runLater(()->{
+            mainWindow = (Stage) infoField.getScene().getWindow();
+            mainWindow.setOnCloseRequest(windowEvent -> {
+                if (connection.isSocketInit() && !connection.isSocketClosed()) {
+                    connection.sendMsgToServer(ConnectionCommands.END);
+                }
+            });
+        });
     }
 
     /**
@@ -217,5 +231,15 @@ public class ClientMainController implements Initializable {
      */
     private String getCurrentPath() {
         return pathField.getText();
+    }
+
+    /**
+     * обработчик нажатия кнопки отправки файла на сервер
+     * @param actionEvent
+     */
+    @FXML
+    public void sendFileToServer(ActionEvent actionEvent) {
+        Path fileFullPath = Paths.get(getCurrentPath()).resolve(getSelectedFileName());
+        connection.fileSendToServer(fileFullPath);
     }
 }

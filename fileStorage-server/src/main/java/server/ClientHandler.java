@@ -27,18 +27,22 @@ public class ClientHandler {
 
             handlerSettings(server, socket);
 
-            tryToConnectUser();
+            server.getServerSettings().getExecutorService().execute( ()-> {
 
-            userWorkingConnection();
+                try {
+                    tryToConnectUser();
+                    userWorkingConnection();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                    //логирование ошибки
+                } finally {
+                    disconnectClient();
+                }
 
-        } catch (SocketTimeoutException e) {
+            });
 
-            e.printStackTrace();
         } catch (IOException e) {
-
             e.printStackTrace();
-        } finally {
-            disconnectClient();
         }
 
     }
@@ -62,7 +66,6 @@ public class ClientHandler {
         server.disconnectUser(this);
         //serverLogger.log(Level.INFO,"Client "+login+" disconnected");
 
-
         try {
             socket.close();
         } catch (IOException e) {
@@ -74,76 +77,107 @@ public class ClientHandler {
     /**
      * авторизация и подключение пользователя к серверу
      */
-    private void tryToConnectUser(){
-        server.getServerSettings().getExecutorService().execute(()->{
-            try {
-                socket.setSoTimeout(120000);
+    private void tryToConnectUser() throws IOException{
 
-                while (true) {
-                    String msg = ins.readUTF();
+        this.authenticated = true;  //временно
 
-                    if (msg.equals(ConnectionCommands.END)) {
-                        sendMsgToClient(ConnectionCommands.END);
-                        break;
-                    }
+        try {
+            socket.setSoTimeout(120000);
 
-                    if (msg.startsWith(ConnectionCommands.REG_TRY)) {
+            while (true) {
+                String msg = ins.readUTF();
 
-                        String[] tokens = msg.split("~");
-                        if (tokens.length<3) continue;
+                /**
+                 * temp
+                 */
+                System.out.println("auth msg:" + msg);
+                /**fggfh**/
+
+                if (msg.equals(ConnectionCommands.END)) {
+                    sendMsgToClient(ConnectionCommands.END);
+                    break;
+                }
+
+                if (msg.startsWith(ConnectionCommands.REG_TRY)) {
+
+                    String[] tokens = msg.split("~");
+                    if (tokens.length<3) continue;
                         //регистрация пользователей
 
 
-                        String result = ConnectionCommands.OPER_FAIL;
-                        String message = "nickname is already used";
+                    String result = ConnectionCommands.OPER_FAIL;
+                    String message = "nickname is already used";
 
-                        sendMsgToClient(String.format("%s~%s~%s",ConnectionCommands.REG_TRY,result,message));
-                        break;
-                    }
-
-                    if (msg.startsWith(ConnectionCommands.AUTH_TRY)) {
-
-                        String[] tokens = msg.split("~");
-                        if (tokens.length<3) continue;
-
-                        //авторизация пользователя
-                        this.login = tokens[1];
-                        this.authenticated = true;
-                        server.connectUser(this);
-
-                        String result = ConnectionCommands.OPER_OK;
-                        String message = "Connection is created";
-
-                        sendMsgToClient(String.format("%s~%s~%s",ConnectionCommands.AUTH_TRY,result,message));
-                        break;
-                    }
-
+                    sendMsgToClient(String.format("%s~%s~%s",ConnectionCommands.REG_TRY,result,message));
+                    break;
                 }
 
+                if (msg.startsWith(ConnectionCommands.AUTH_TRY)) {
+
+                    String[] tokens = msg.split("~");
+                    if (tokens.length<3) continue;
+
+                    //авторизация пользователя
+                    this.login = tokens[1];
+                    this.authenticated = true;
+                    server.connectUser(this);
+
+                    String result = ConnectionCommands.OPER_OK;
+                    String message = "Connection is created";
+
+                    sendMsgToClient(String.format("%s~%s~%s",ConnectionCommands.AUTH_TRY,result,message));
+                    break;
+                }
 
             }
-            catch (SocketException e) {
-                sendMsgToClient(ConnectionCommands.END);
-            } catch (IOException e) {
+
+        }
+        catch (SocketException e) {
+            sendMsgToClient(ConnectionCommands.END);
+        } finally {
+            try {
+                socket.setSoTimeout(0);
+            } catch (SocketException e) {
                 e.printStackTrace();
             }
-            finally {
-                try {
-                    socket.setSoTimeout(0);
-                } catch (SocketException e) {
-                    e.printStackTrace();
-                }
 
-            }
-        });
+        }
+
     }
 
     private void userWorkingConnection() throws IOException{
         while (authenticated) {
             String msg = ins.readUTF();
 
+            /**
+             * temp
+             */
+            System.out.println("work msg:" + msg);
+            /**fggfh**/
+
             if (msg.equals(ConnectionCommands.END)) {
                 sendMsgToClient(ConnectionCommands.END);
+                this.authenticated = false;
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_UPLOAD)) {
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_DOWNLOAD)) {
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_DELETE)) {
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_RENAME)) {
+                break;
+            }
+
+            if (msg.startsWith(ConnectionCommands.FILE_SHARE)) {
                 break;
             }
         }
