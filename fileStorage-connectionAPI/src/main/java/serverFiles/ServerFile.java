@@ -1,10 +1,11 @@
 package serverFiles;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
 
 
-public class ServerFile{
+public class ServerFile implements Serializable {
 
     private String fileName;
     private long size;
@@ -48,7 +49,7 @@ public class ServerFile{
     public String toString() {
         return "ServerFile{" +
                 "fileName='" + fileName + '\'' +
-                ", size=" + size +
+                ", size=" + size + " bytes"+
                 ", lastUpdate=" + lastUpdate +
                 ", serverID=" + serverID +
                 '}';

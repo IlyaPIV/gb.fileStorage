@@ -5,6 +5,8 @@ public class ConnectionCommands {
     public static final String END = "/end";
     public static final String DISC = "/disconnect";
     public static final String REG_TRY = "/reg_try";
+
+    public static final String OPER_START = "/operation_start";
     public static final String OPER_OK = "/operation_ok";
     public static final String OPER_FAIL = "/operation_fail";
     public static final String AUTH_TRY = "/auth_try";

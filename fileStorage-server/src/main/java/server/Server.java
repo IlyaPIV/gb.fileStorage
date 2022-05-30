@@ -44,7 +44,7 @@ public class Server {
         this.serverSettings.setExecutorService(Executors.newCachedThreadPool());
 
         this.clients = new CopyOnWriteArrayList<>();
-
+        this.filesStorage = new FilesStorage();
         //logger
 
         //auth service

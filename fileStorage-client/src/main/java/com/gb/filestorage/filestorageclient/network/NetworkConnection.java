@@ -1,10 +1,13 @@
 package com.gb.filestorage.filestorageclient.network;
 
 import com.gb.filestorage.filestorageclient.ClientMainController;
+import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
 import constants.ConnectionCommands;
+import serverFiles.ServerFile;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class NetworkConnection {
@@ -84,6 +87,9 @@ public class NetworkConnection {
                //аутентификация на сервере
                authenticationOnServer();
 
+               //получение списка файлов с сервера
+               updateServersFilesList();
+
                //работа с сервером
                 workingOnServer();
 
@@ -101,6 +107,15 @@ public class NetworkConnection {
         });
 //        wthrd.setDaemon(true);
         wthrd.start();
+    }
+
+    /**
+     * отправка сообщения на сервер команды получения списка файлов
+     */
+    public void updateServersFilesList() {
+        sendMsgToServer(ConnectionCommands.GET_FILES_LIST);
+
+        System.out.println("хочу список файлов с сервера!!!");
     }
 
 
@@ -139,6 +154,7 @@ public class NetworkConnection {
                 if (result) {
                     //переключение на авторизацию
                 }
+                break;
             }
 
             if (msg.startsWith(ConnectionCommands.AUTH_TRY)) {
@@ -148,9 +164,8 @@ public class NetworkConnection {
                 client.setInfoText(serverMsg);
                 if (result) {
                     setAuthenticated(true);
-                    break;
                 }
-
+                break;
             }
         }
     }
@@ -174,13 +189,53 @@ public class NetworkConnection {
             }
 
             if (msg.startsWith(ConnectionCommands.FILE_UPLOAD)) {
-                break;
+                String[] tokens = msg.split("~");
+                if (tokens.length != 3) {
+                    continue;
+                }
+                if (tokens[1].equals(ConnectionCommands.OPER_OK)) {
+                    client.setInfoText("operation - OK");
+                    updateServersFilesList();
+                } else if (tokens[1].equals(ConnectionCommands.OPER_FAIL)) {
+                    client.setInfoText("operation - failed");
+                } else {
+                    client.setInfoText("Failed to load servers' file list");
+                };
+                continue;
             }
 
             if (msg.startsWith(ConnectionCommands.FILE_DOWNLOAD)) {
-                break;
+                continue;
             }
 
+            if (msg.startsWith(ConnectionCommands.GET_FILES_LIST)) {
+                String[] tokens = msg.split("~");
+                if (tokens.length != 3) {
+                    continue;
+                }
+                if (tokens[1].equals(ConnectionCommands.OPER_START)) {
+                    client.serverFilesTable.getItems().clear();
+                    int listSize = Integer.parseInt(tokens[2]);
+
+                    for (int i = 0; i < listSize; i++) {
+                        try {
+                            ServerFile serverFileInfo = (ServerFile) settings.objins.readObject();
+                            System.out.println(serverFileInfo);
+                            client.serverFilesTable.getItems().add(serverFileInfo);
+
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                } else if (tokens[1].equals(ConnectionCommands.OPER_OK)) {
+                    client.setInfoText("operation - OK");
+                } else if (tokens[1].equals(ConnectionCommands.OPER_FAIL)) {
+                    client.setInfoText("operation - failed");
+                } else {
+                    client.setInfoText("Failed to load servers' file list");
+                };
+            }
         }
     }
 
@@ -195,8 +250,34 @@ public class NetworkConnection {
      * отправка файла на сервер
      * @param fileFullPath - адрес файла на клиенте
      */
-    public void fileSendToServer(Path fileFullPath) {
-        sendMsgToServer(ConnectionCommands.FILE_UPLOAD);
+    public void fileSendToServer(Path fileFullPath, String filename) {
+
+
+        byte[] dataBytes = new byte[1024];
+        File fileToSend = new File(fileFullPath.toString());
+        long fileSize = 0;
+        try {
+            fileSize = Files.size(fileFullPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        sendMsgToServer(String.format("%s~%s~%d",ConnectionCommands.FILE_UPLOAD,filename,fileSize));
+        OutputStream fdout = settings.fdout;
+
+        try (InputStream fins = new FileInputStream(fileToSend)){
+
+            while (fins.available()>0) {
+                int n = fins.read(dataBytes);
+                fdout.write(dataBytes);
+                fdout.flush();
+            }
+            fdout.flush();
+            System.out.println("Отправка файла завершена");
+        } catch (IOException e) {
+            e.printStackTrace();
+            //логирование
+        }
     }
 
     /**

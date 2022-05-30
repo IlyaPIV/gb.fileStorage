@@ -6,7 +6,9 @@ import serverFiles.ServerFile;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class ClientHandler {
@@ -16,8 +18,10 @@ public class ClientHandler {
     private DataInputStream ins;
     private DataOutputStream ous;
 
-    private BufferedInputStream bfins;
-    private BufferedOutputStream bfous;
+    private ObjectOutputStream objous;
+
+    private RandomAccessFile fwr;
+    private DataInputStream fdins;
 
     private boolean authenticated;
     private String login;
@@ -58,8 +62,10 @@ public class ClientHandler {
         this.serverLogger = ServerSettings.LOGGER;
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
-        this.bfins = new BufferedInputStream(socket.getInputStream());
-        this.bfous = new BufferedOutputStream(socket.getOutputStream());
+        this.objous = new ObjectOutputStream(socket.getOutputStream());
+
+        this.fdins = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+
     }
 
     /**
@@ -71,7 +77,19 @@ public class ClientHandler {
         //serverLogger.log(Level.INFO,"Client "+login+" disconnected");
 
         try {
+
+            /**
+             * не знаю надо ли потоки закрывать отдельно или достаточно закрыть сокет
+             */
+
+//            ins.close();
+//            ous.close();
+//            objous.close();
+//            fdins.close();
+//            fwr.close();
+
             socket.close();
+
             System.out.println("Connection with user is closed");
         } catch (IOException e) {
             e.printStackTrace();
@@ -167,7 +185,8 @@ public class ClientHandler {
             }
 
             if (msg.startsWith(ConnectionCommands.FILE_UPLOAD)) {
-                break;
+                uploadFileToServer(msg);
+                continue;
             }
 
             if (msg.startsWith(ConnectionCommands.FILE_DOWNLOAD)) {
@@ -187,14 +206,94 @@ public class ClientHandler {
             }
 
             if (msg.equals(ConnectionCommands.GET_FILES_LIST)) {
-                FilesStorage serverFS = server.getFilesStorage();
-                for (ServerFile sf:
-                     serverFS.getFilesOnServer(0)) {
-                    System.out.println(sf);
-                }
+                sendUsersListOfFilesToClient();
             }
         }
 
+    }
+
+    /**
+     * процедура загрузки файла на сервер
+     * @param msg - строка сообщения с клиентского приложения
+     */
+    private void uploadFileToServer(String msg) {
+        String[] tokens = msg.split("~");
+        String filename = tokens[1];
+        long filesize = Long.parseLong(tokens[2]);
+
+        String filepath = Paths.get(FilesStorage.DIRECTORY).resolve(filename).toString();
+
+        byte[] dataBytes = new byte[1024];
+        File newFile = new File(filepath);
+        int num = 0;
+
+        try (RandomAccessFile fwr = new RandomAccessFile(newFile, "rw")) {
+            long bytesLeft = filesize;
+
+            while (fdins.available()>0 && bytesLeft>0) {
+                int countThisTime = (int) Math.min(bytesLeft, dataBytes.length);
+                num = fdins.read(dataBytes,0,countThisTime);
+                fwr.write(dataBytes,0, num);
+                fwr.skipBytes(num);
+                bytesLeft-=countThisTime;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            //логирование
+
+        }
+
+        long newFileSize = 0;
+        try {
+            newFileSize = Files.size(newFile.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.printf("New fire recieved. Size on client = %d. Size on server = %d\t", filesize, newFileSize);
+        if (newFileSize==filesize) {
+            sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.FILE_UPLOAD, ConnectionCommands.OPER_OK, newFileSize));
+        } else {
+            sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.FILE_UPLOAD, ConnectionCommands.OPER_FAIL, 0));
+        }
+    }
+
+
+    /**
+     * отправляет на клиентское приложение список загруженных файлов пользователя на сервере
+     * ПРИМЕЧАНИЕ: не помешала бы оптимизация
+     */
+    private void sendUsersListOfFilesToClient() {
+        //по хорошему не мешала бы оптимизация на случай потери пакета при передаче
+        FilesStorage serverFS = server.getFilesStorage();
+
+        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0);
+
+        sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.GET_FILES_LIST,ConnectionCommands.OPER_START,serverFileList.size()));
+
+        for (ServerFile sf:
+                serverFileList) {
+            System.out.println(sf);
+
+            sendFileInfoToClient(sf);
+
+        }
+
+        System.out.println("Список файлов отправлен");
+    }
+
+    /**
+     * отправляет информацию о файле на клиента
+     * @param sf
+     */
+    private void sendFileInfoToClient(ServerFile sf) {
+
+        try {
+            objous.writeObject(sf);
+            objous.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -203,6 +302,7 @@ public class ClientHandler {
     public void sendMsgToClient(String msg){
         try {
             ous.writeUTF(msg);
+            ous.flush();
         } catch (IOException e) {
             e.printStackTrace();
             //добавить логирование

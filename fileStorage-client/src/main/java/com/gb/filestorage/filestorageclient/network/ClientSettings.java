@@ -13,8 +13,9 @@ public class ClientSettings {
     public DataInputStream ins;
     public DataOutputStream ous;
 
-    public BufferedInputStream bfins;
-    public BufferedOutputStream bfous;
+    public ObjectInputStream objins;
+
+    public OutputStream fdout;
 
     public Socket getSocket() {
         return socket;
@@ -31,8 +32,9 @@ public class ClientSettings {
     public void setDataStreams() throws IOException {
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
-        this.bfins = new BufferedInputStream(socket.getInputStream());
-        this.bfous = new BufferedOutputStream(socket.getOutputStream());
+        this.objins = new ObjectInputStream(socket.getInputStream());
+
+        this.fdout = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
     }
 
 

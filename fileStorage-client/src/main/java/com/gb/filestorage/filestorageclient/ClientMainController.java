@@ -287,12 +287,14 @@ public class ClientMainController implements Initializable {
     public void sendFileToServer(ActionEvent actionEvent) {
 
         if (clientFilesTable.getSelectionModel().getSelectedItem()!=null) {
-            Path fileFullPath = Paths.get(pathField.getText()).resolve(clientFilesTable.getSelectionModel().getSelectedItem().getFilename());
+            String fileName = clientFilesTable.getSelectionModel().getSelectedItem().getFilename();
+            Path fileFullPath = Paths.get(pathField.getText()).resolve(fileName);
 
             if (Files.isDirectory(fileFullPath)) {
                 setInfoText("Can't send directory. Please, choose a file.");
             } else {
-                connection.fileSendToServer(fileFullPath);
+                connection.fileSendToServer(fileFullPath, fileName);
+                //connection.updateServersFilesList();
             }
         }
     }
