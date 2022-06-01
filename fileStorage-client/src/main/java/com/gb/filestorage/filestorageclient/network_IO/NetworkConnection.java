@@ -1,7 +1,6 @@
-package com.gb.filestorage.filestorageclient.network;
+package com.gb.filestorage.filestorageclient.network_IO;
 
 import com.gb.filestorage.filestorageclient.ClientMainController;
-import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
 import constants.ConnectionCommands;
 import serverFiles.ServerFile;
 

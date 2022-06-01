@@ -1,8 +1,8 @@
 package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
-import com.gb.filestorage.filestorageclient.network.NetworkConnection;
-import constants.ConnectionCommands;
+import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
+import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -28,14 +28,19 @@ import java.util.ResourceBundle;
 
 public class ClientMainController implements Initializable {
 
+
+    private Stage mainWindow;
+    private NetworkConnection connection;
+    private boolean terminalIsRunning;
+
+    private TerminalClient terminalClient;
+
     @FXML
     public VBox terminalWorkingArea;
     @FXML
     public TextField terminalCmndLine;
     public StackPane serverHalf;
-    private Stage mainWindow;
-    private NetworkConnection connection;
-    private boolean terminalIsRunning;
+
 
     @FXML
     public VBox serverWorkingArea;
@@ -75,16 +80,20 @@ public class ClientMainController implements Initializable {
         prepareDisksBox();
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
         prepareServerTable();
-        connectToServer();
 
-        Platform.runLater(()->{
-            mainWindow = (Stage) infoField.getScene().getWindow();
-            mainWindow.setOnCloseRequest(windowEvent -> {
-                if (connection.isSocketInit() && !connection.isSocketClosed()) {
-                    connection.closeConnection();
-                }
-            });
-        });
+        /*
+        * отключено IO соединение
+         */
+//        connectToServer();
+//
+//        Platform.runLater(()->{
+//            mainWindow = (Stage) infoField.getScene().getWindow();
+//            mainWindow.setOnCloseRequest(windowEvent -> {
+//                if (connection.isSocketInit() && !connection.isSocketClosed()) {
+//                    connection.closeConnection();
+//                }
+//            });
+//        });
     }
 
     /**
@@ -249,7 +258,8 @@ public class ClientMainController implements Initializable {
      */
     @FXML
     private void btnExitAction(ActionEvent actionEvent){
-        connection.closeConnection();
+
+        //connection.closeConnection();
 
         Platform.exit();
     }
@@ -304,7 +314,8 @@ public class ClientMainController implements Initializable {
             if (Files.isDirectory(fileFullPath)) {
                 setInfoText("Can't send directory. Please, choose a file.");
             } else {
-                connection.fileSendToServer(fileFullPath, fileName);
+                setInfoText("File was transfered");
+                //connection.fileSendToServer(fileFullPath, fileName);
                 //connection.updateServersFilesList();
             }
         }
@@ -316,6 +327,15 @@ public class ClientMainController implements Initializable {
     }
 
     private void switchTerminal() {
+
+        if (terminalClient == null) {
+            try {
+                terminalClient = new TerminalClient(this);
+            } catch (IOException e) {
+                setInfoText("ERROR INIT TERMINAL INTERFACE");
+            }
+        }
+
         this.terminalIsRunning = !terminalIsRunning;
 
         ObservableList<Node> layers = this.serverHalf.getChildren();
@@ -331,6 +351,16 @@ public class ClientMainController implements Initializable {
 
             terminalDisplay.clear();
         }
+
+
+
+        try {
+            terminalClient.start();
+        } catch (IOException e) {
+            setInfoText("ERROR START CONNECTION WITH SERVER");
+        }
+
+
 
         if (terminalIsRunning) {
             terminalDisplay.appendText("Welcome to terminal interface.\n");
@@ -360,7 +390,12 @@ public class ClientMainController implements Initializable {
     @FXML
     public void cmndTerminate(ActionEvent actionEvent) {
 
+
+
         String textInCmd = terminalCmndLine.getText();
+
+        terminalClient.sendMsgToServer(textInCmd);
+
         terminalDisplay.appendText("cmd>"+textInCmd+"\n");
         switch (textInCmd.toUpperCase()) {
             case "HELP" -> {
