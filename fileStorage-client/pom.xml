@@ -38,6 +38,12 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.gb.filestorage.API</groupId>
+            <artifactId>fileStorage-connectionAPI</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -61,7 +67,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com.gb.filestorage.filestorageclient/com.gb.filestorage.filestorageclient.HelloApplication
+                                com.gb.filestorage.filestorageclient/com.gb.filestorage.filestorageclient.ClienMainApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
