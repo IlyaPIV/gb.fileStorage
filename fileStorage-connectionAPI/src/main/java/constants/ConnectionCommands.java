@@ -17,4 +17,10 @@ public class ConnectionCommands {
     public static final String FILE_SHARE = "/file_share";
 
     public static final String GET_FILES_LIST = "/get_files_list";
+
+    public static final String CMD_LS = "ls";
+
+    public static final String CMD_CD = "cd ";
+
+    public static final String CMD_CAT = "cat ";
 }

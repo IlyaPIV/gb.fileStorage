@@ -6,12 +6,16 @@ import constants.ConnectionCommands;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import serverFiles.ServerFile;
 
@@ -24,26 +28,33 @@ import java.util.ResourceBundle;
 
 public class ClientMainController implements Initializable {
 
-
-
+    @FXML
+    public VBox terminalWorkingArea;
+    @FXML
+    public TextField terminalCmndLine;
+    public StackPane serverHalf;
     private Stage mainWindow;
     private NetworkConnection connection;
+    private boolean terminalIsRunning;
 
-
+    @FXML
+    public VBox serverWorkingArea;
+    @FXML
+    public TextArea terminalDisplay;
     @FXML
     private TextField infoField;
     @FXML
+    public Button btnTerminal;
+    @FXML
     public Button button_share;
-
+    @FXML
+    public Button button_addLink;
     @FXML
     public Button button_rename;
-
     @FXML
     public Button button_delete;
-
     @FXML
     public Button button_upload;
-
     @FXML
     public Button button_download;
     @FXML
@@ -54,7 +65,6 @@ public class ClientMainController implements Initializable {
 
     @FXML
     public TableView<ClientFileInfo> clientFilesTable;
-
     @FXML
     public TableView<ServerFile> serverFilesTable;
 
@@ -82,6 +92,7 @@ public class ClientMainController implements Initializable {
      * @param text текст сообщения
      */
     public void setInfoText(String text){
+        infoField.clear();
         infoField.setText(text.toUpperCase());
     }
 
@@ -297,5 +308,103 @@ public class ClientMainController implements Initializable {
                 //connection.updateServersFilesList();
             }
         }
+    }
+
+    @FXML
+    public void cmdTerminal(ActionEvent actionEvent) {
+        switchTerminal();
+    }
+
+    private void switchTerminal() {
+        this.terminalIsRunning = !terminalIsRunning;
+
+        ObservableList<Node> layers = this.serverHalf.getChildren();
+        if (layers.size()>1) {
+            Node topLayer = layers.get(layers.size()-1);
+
+            Node newTop = layers.get(layers.size()-2);
+
+            topLayer.setVisible(false);
+            topLayer.toBack();
+
+            newTop.setVisible(true);
+
+            terminalDisplay.clear();
+        }
+
+        if (terminalIsRunning) {
+            terminalDisplay.appendText("Welcome to terminal interface.\n");
+            terminalDisplay.appendText("To get list of commands type \"help\".\n");
+            terminalDisplay.appendText("\n");
+            //printTerminalCommands();
+        }
+
+        setInfoText("terminal is "+ (terminalIsRunning ? "running" : "off"));
+    }
+
+    /**
+     * вывод на экран терминала списка доступных консольных команд
+     */
+    private void printTerminalCommands() {
+        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CD [ .. ]"     ,"переход в родительский каталог"));
+        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CD [DIR]"      ,"смена текущего каталога"));
+        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "LS"            ,"вывод списка файлов в текущем каталоге"));
+        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CAT [FILE]"    ,"вывод содержимого указанного файла в терминал"));
+        terminalDisplay.appendText("\n");
+    }
+
+    /**
+     * обработчик ввода строки командной панели терминала
+     * @param actionEvent
+     */
+    @FXML
+    public void cmndTerminate(ActionEvent actionEvent) {
+
+        String textInCmd = terminalCmndLine.getText();
+        terminalDisplay.appendText("cmd>"+textInCmd+"\n");
+        switch (textInCmd.toUpperCase()) {
+            case "HELP" -> {
+                printTerminalCommands();
+            }
+            case "LS" -> {
+                printListOfFilesOnServer();
+            }
+            default -> {
+                String[] tokens = textInCmd.split(" ");
+                if (tokens.length==2) {
+                    if (tokens[0].equals("CD")) {
+                        changeUsersDirectoryOnServer(tokens[1]);
+                    }
+                    if (tokens[0].equals("CAT")) {
+                        getAndPrintFileData(tokens[1]);
+                    }
+                }
+            }
+        }
+        terminalCmndLine.clear();
+
+    }
+
+
+    /**
+     * получает и выводит в терминал содержимое файла
+     * @param fileName - имя файла на сервере
+     */
+    private void getAndPrintFileData(String fileName) {
+    }
+
+
+    /**
+     * получает от сервера список файлов в указанной директории и выводит их на окно терминала
+     */
+    private void printListOfFilesOnServer() {
+    }
+
+
+    /**
+     * меняет текущую директорию пользователя на сервере
+     * @param directory - новая директория (либо родительская - если введено "..")
+     */
+    private void changeUsersDirectoryOnServer(String directory) {
     }
 }

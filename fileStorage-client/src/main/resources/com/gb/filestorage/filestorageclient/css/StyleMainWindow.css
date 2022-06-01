@@ -52,3 +52,13 @@
     -fx-background-padding-down: 2;
     -fx-background-padding-right: 2;
 }
+
+#terminalDisplay {
+    -fx-background-color: black;
+    -fx-text-fill: white;
+}
+
+#terminalCmndLine {
+    -fx-background-color: black;
+    -fx-text-fill: white;
+}
