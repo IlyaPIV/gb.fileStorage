@@ -1,17 +1,21 @@
 package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
-import com.gb.filestorage.filestorageclient.network.NetworkConnection;
-import constants.ConnectionCommands;
+import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
+import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import serverFiles.ServerFile;
 
@@ -25,25 +29,37 @@ import java.util.ResourceBundle;
 public class ClientMainController implements Initializable {
 
 
-
     private Stage mainWindow;
     private NetworkConnection connection;
+    private boolean terminalIsRunning;
+
+    private TerminalClient terminalClient;
+
+    @FXML
+    public VBox terminalWorkingArea;
+    @FXML
+    public TextField terminalCmndLine;
+    public StackPane serverHalf;
 
 
+    @FXML
+    public VBox serverWorkingArea;
+    @FXML
+    public TextArea terminalDisplay;
     @FXML
     private TextField infoField;
     @FXML
+    public Button btnTerminal;
+    @FXML
     public Button button_share;
-
+    @FXML
+    public Button button_addLink;
     @FXML
     public Button button_rename;
-
     @FXML
     public Button button_delete;
-
     @FXML
     public Button button_upload;
-
     @FXML
     public Button button_download;
     @FXML
@@ -54,7 +70,6 @@ public class ClientMainController implements Initializable {
 
     @FXML
     public TableView<ClientFileInfo> clientFilesTable;
-
     @FXML
     public TableView<ServerFile> serverFilesTable;
 
@@ -65,14 +80,19 @@ public class ClientMainController implements Initializable {
         prepareDisksBox();
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
         prepareServerTable();
-        connectToServer();
 
+        /*
+        * отключено IO соединение
+         */
+//        connectToServer();
+//
         Platform.runLater(()->{
             mainWindow = (Stage) infoField.getScene().getWindow();
             mainWindow.setOnCloseRequest(windowEvent -> {
-                if (connection.isSocketInit() && !connection.isSocketClosed()) {
-                    connection.closeConnection();
-                }
+//                if (connection.isSocketInit() && !connection.isSocketClosed()) {
+//                    connection.closeConnection();
+//                }
+                closeTerminalConnection();
             });
         });
     }
@@ -82,6 +102,7 @@ public class ClientMainController implements Initializable {
      * @param text текст сообщения
      */
     public void setInfoText(String text){
+        infoField.clear();
         infoField.setText(text.toUpperCase());
     }
 
@@ -238,9 +259,13 @@ public class ClientMainController implements Initializable {
      */
     @FXML
     private void btnExitAction(ActionEvent actionEvent){
-        connection.closeConnection();
+
+        //connection.closeConnection();
 
         Platform.exit();
+
+        closeTerminalConnection();
+
     }
 
     /**
@@ -293,9 +318,88 @@ public class ClientMainController implements Initializable {
             if (Files.isDirectory(fileFullPath)) {
                 setInfoText("Can't send directory. Please, choose a file.");
             } else {
-                connection.fileSendToServer(fileFullPath, fileName);
+                setInfoText("File was transfered");
+                //connection.fileSendToServer(fileFullPath, fileName);
                 //connection.updateServersFilesList();
             }
         }
     }
+
+    @FXML
+    public void cmdTerminal(ActionEvent actionEvent) {
+        switchTerminal();
+    }
+
+    private void switchTerminal() {
+
+        if (terminalClient == null) {
+            try {
+                terminalClient = new TerminalClient(this);
+            } catch (IOException e) {
+                setInfoText("ERROR INIT TERMINAL INTERFACE");
+            }
+        }
+
+        this.terminalIsRunning = !terminalIsRunning;
+
+        ObservableList<Node> layers = this.serverHalf.getChildren();
+        if (layers.size()>1) {
+            Node topLayer = layers.get(layers.size()-1);
+
+            Node newTop = layers.get(layers.size()-2);
+
+            topLayer.setVisible(false);
+            topLayer.toBack();
+
+            newTop.setVisible(true);
+
+            terminalDisplay.clear();
+        }
+
+
+
+        try {
+            terminalClient.start();
+        } catch (IOException e) {
+            setInfoText("ERROR START CONNECTION WITH SERVER");
+        }
+
+
+
+        if (terminalIsRunning) {
+            terminalDisplay.appendText("\n");
+            terminalDisplay.appendText("Welcome to terminal interface.\n");
+            terminalDisplay.appendText("To get list of commands type \"help\".\n");
+            terminalDisplay.appendText("\n");
+            //printTerminalCommands();
+        }
+
+        setInfoText("terminal is "+ (terminalIsRunning ? "running" : "off"));
+    }
+
+    /**
+     * обработчик ввода строки командной панели терминала
+     * @param actionEvent
+     */
+    @FXML
+    public void cmndTerminate(ActionEvent actionEvent) {
+
+        String textInCmd = terminalCmndLine.getText();
+
+        terminalCmndLine.clear();
+
+        terminalClient.sendMsgToServer(textInCmd);
+
+    }
+
+    private void closeTerminalConnection() {
+        try {
+            if (terminalClient!=null && terminalClient.isRunning()) {
+                terminalClient.stop();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -14,7 +14,7 @@ import java.util.List;
 
 public class FilesStorage {
 
-    public static final String DIRECTORY = "fileStorage-server/server_storage/";
+    public static final String DIRECTORY = "fileStorage-server\\server_storage\\";
 
 
 

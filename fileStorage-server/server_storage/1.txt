@@ -1,1 +1,5 @@
 test file
+
+some text inside the
+
+<<end of file>>
