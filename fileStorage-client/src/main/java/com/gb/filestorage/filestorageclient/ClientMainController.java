@@ -86,14 +86,15 @@ public class ClientMainController implements Initializable {
          */
 //        connectToServer();
 //
-//        Platform.runLater(()->{
-//            mainWindow = (Stage) infoField.getScene().getWindow();
-//            mainWindow.setOnCloseRequest(windowEvent -> {
+        Platform.runLater(()->{
+            mainWindow = (Stage) infoField.getScene().getWindow();
+            mainWindow.setOnCloseRequest(windowEvent -> {
 //                if (connection.isSocketInit() && !connection.isSocketClosed()) {
 //                    connection.closeConnection();
 //                }
-//            });
-//        });
+                closeTerminalConnection();
+            });
+        });
     }
 
     /**
@@ -262,6 +263,9 @@ public class ClientMainController implements Initializable {
         //connection.closeConnection();
 
         Platform.exit();
+
+        closeTerminalConnection();
+
     }
 
     /**
@@ -363,6 +367,7 @@ public class ClientMainController implements Initializable {
 
 
         if (terminalIsRunning) {
+            terminalDisplay.appendText("\n");
             terminalDisplay.appendText("Welcome to terminal interface.\n");
             terminalDisplay.appendText("To get list of commands type \"help\".\n");
             terminalDisplay.appendText("\n");
@@ -373,73 +378,28 @@ public class ClientMainController implements Initializable {
     }
 
     /**
-     * вывод на экран терминала списка доступных консольных команд
-     */
-    private void printTerminalCommands() {
-        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CD [ .. ]"     ,"переход в родительский каталог"));
-        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CD [DIR]"      ,"смена текущего каталога"));
-        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "LS"            ,"вывод списка файлов в текущем каталоге"));
-        terminalDisplay.appendText(String.format("%-15s\t- %s\n", "CAT [FILE]"    ,"вывод содержимого указанного файла в терминал"));
-        terminalDisplay.appendText("\n");
-    }
-
-    /**
      * обработчик ввода строки командной панели терминала
      * @param actionEvent
      */
     @FXML
     public void cmndTerminate(ActionEvent actionEvent) {
 
-
-
         String textInCmd = terminalCmndLine.getText();
+
+        terminalCmndLine.clear();
 
         terminalClient.sendMsgToServer(textInCmd);
 
-        terminalDisplay.appendText("cmd>"+textInCmd+"\n");
-        switch (textInCmd.toUpperCase()) {
-            case "HELP" -> {
-                printTerminalCommands();
+    }
+
+    private void closeTerminalConnection() {
+        try {
+            if (terminalClient!=null && terminalClient.isRunning()) {
+                terminalClient.stop();
             }
-            case "LS" -> {
-                printListOfFilesOnServer();
-            }
-            default -> {
-                String[] tokens = textInCmd.split(" ");
-                if (tokens.length==2) {
-                    if (tokens[0].equals("CD")) {
-                        changeUsersDirectoryOnServer(tokens[1]);
-                    }
-                    if (tokens[0].equals("CAT")) {
-                        getAndPrintFileData(tokens[1]);
-                    }
-                }
-            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        terminalCmndLine.clear();
-
     }
 
-
-    /**
-     * получает и выводит в терминал содержимое файла
-     * @param fileName - имя файла на сервере
-     */
-    private void getAndPrintFileData(String fileName) {
-    }
-
-
-    /**
-     * получает от сервера список файлов в указанной директории и выводит их на окно терминала
-     */
-    private void printListOfFilesOnServer() {
-    }
-
-
-    /**
-     * меняет текущую директорию пользователя на сервере
-     * @param directory - новая директория (либо родительская - если введено "..")
-     */
-    private void changeUsersDirectoryOnServer(String directory) {
-    }
 }

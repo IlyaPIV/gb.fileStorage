@@ -23,4 +23,6 @@ public class ConnectionCommands {
     public static final String CMD_CD = "cd ";
 
     public static final String CMD_CAT = "cat ";
+
+    public static final String CMD_HELP = "help";
 }

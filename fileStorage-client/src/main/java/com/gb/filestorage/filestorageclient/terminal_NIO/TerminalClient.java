@@ -16,6 +16,8 @@ public class TerminalClient {
 
     private ClientMainController clientController;
 
+    Thread serverListener;
+
     public TerminalClient(ClientMainController cmc) throws IOException {
         clientController = cmc;
         sc = SocketChannel.open();
@@ -35,7 +37,7 @@ public class TerminalClient {
             }
         }
 
-        Thread serverListener = new Thread(new Runnable() {
+        serverListener = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true) {
@@ -46,7 +48,8 @@ public class TerminalClient {
                             clientController.terminalDisplay.appendText(new String(buffer.array()));
                         }
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                       // throw new RuntimeException(e);
+                        break;
                     }
                 }
             }
@@ -70,6 +73,14 @@ public class TerminalClient {
 
 
     public void stop() throws IOException {
+        //sc.finishConnect();
+      //  serverListener.interrupt();
         sc.close();
     }
+
+    public boolean isRunning(){
+        return sc.isOpen();
+    }
+
+
 }
