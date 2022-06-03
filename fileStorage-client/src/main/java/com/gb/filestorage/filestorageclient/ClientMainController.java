@@ -2,6 +2,7 @@ package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
 import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
+import com.gb.filestorage.filestorageclient.network_Netty.NettyConnection;
 import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -17,6 +18,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import lombok.extern.slf4j.Slf4j;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -25,12 +27,14 @@ import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 
-
+@Slf4j
 public class ClientMainController implements Initializable {
 
 
     private Stage mainWindow;
     private NetworkConnection connection;
+
+    private NettyConnection nettyConnection;
     private boolean terminalIsRunning;
 
     private TerminalClient terminalClient;
@@ -84,8 +88,29 @@ public class ClientMainController implements Initializable {
         /*
         * отключено IO соединение
          */
-//        connectToServer();
-//
+        //connectToServerIO();
+        //
+        try {
+            createConnectionToServer();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+
+        /**
+         * место под авторизацию
+         */
+        log.debug("Пользователь успешно авторизирован на сервере");
+        nettyConnection.setAuthorizated(true);
+
+        /**
+         * обновление списка файлов - потом перенесётся в другое место к блоку авторизации
+         */
+        if (nettyConnection.isAuthorizated()){
+            updateServerFilesList();
+        }
+
+
+
         Platform.runLater(()->{
             mainWindow = (Stage) infoField.getScene().getWindow();
             mainWindow.setOnCloseRequest(windowEvent -> {
@@ -98,6 +123,26 @@ public class ClientMainController implements Initializable {
     }
 
     /**
+     * обновляет список файлов пользователя на сервере
+     */
+    private void updateServerFilesList() {
+        try {
+            nettyConnection.sendFilesListRequest();
+        } catch (IOException e) {
+            log.error("Ошибка отправки запроса списка файлов на сервер!");
+        }
+    }
+
+    /**
+     * создаёт подключение к серверу через Netty
+     */
+    private void createConnectionToServer() throws IOException {
+
+        this.nettyConnection = new NettyConnection();
+
+    }
+
+    /**
      * выводит текст серверного сообщения в инфо поле
      * @param text текст сообщения
      */
@@ -107,9 +152,9 @@ public class ClientMainController implements Initializable {
     }
 
     /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером
+     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
      */
-    private void connectToServer() {
+    private void connectToServerIO() {
         if (this.connection == null || this.connection.isSocketClosed()) {
             this.connection = new NetworkConnection(this, "login", "pass");
 
@@ -391,6 +436,7 @@ public class ClientMainController implements Initializable {
         terminalClient.sendMsgToServer(textInCmd);
 
     }
+
 
     private void closeTerminalConnection() {
         try {

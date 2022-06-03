@@ -23,6 +23,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         log.debug("incoming message of type: "+inMessage.getClass().toString());
         if (inMessage instanceof FileDownloadRequest fdr) {
 
+
             try {
                 FileTransferData fileData = new FileTransferData(filesStorage.getFileData(fdr.getFileName()), fdr.getFileName());
                 chc.writeAndFlush(fileData);
@@ -44,6 +45,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
 
             log.debug(String.format("incoming file data: { name = %s; size = %d}",
                                                 fileData.getName(), fileData.getSize()));
+
             //доработать id юзера
             try {
                 filesStorage.saveFile(fileData.getName(), fileData.getData(), fileData.getSize(), 0);

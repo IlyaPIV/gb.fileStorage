@@ -62,7 +62,7 @@ public class IOClientHandler {
     private void handlerSettings(IOServer IOServer, Socket socket) throws IOException{
         this.IOServer = IOServer;
         this.socket = socket;
-        this.serverLogger = ServerSettings.LOGGER;
+   //     this.serverLogger = ServerSettings.LOGGER;
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
         this.objous = new ObjectOutputStream(socket.getOutputStream());
@@ -80,16 +80,6 @@ public class IOClientHandler {
         //serverLogger.log(Level.INFO,"Client "+login+" disconnected");
 
         try {
-
-            /**
-             * не знаю надо ли потоки закрывать отдельно или достаточно закрыть сокет
-             */
-
-//            ins.close();
-//            ous.close();
-//            objous.close();
-//            fdins.close();
-//            fwr.close();
 
             socket.close();
 
@@ -113,11 +103,6 @@ public class IOClientHandler {
             while (true) {
                 String msg = ins.readUTF();
 
-                /**
-                 * temp
-                 */
-                System.out.println("auth msg:" + msg);
-                /**fggfh**/
 
                 if (msg.equals(ConnectionCommands.END)) {
                     sendMsgToClient(ConnectionCommands.END);
@@ -175,11 +160,6 @@ public class IOClientHandler {
         while (authenticated) {
             String msg = ins.readUTF();
 
-            /**
-             * temp
-             */
-            System.out.println("work msg:" + msg);
-            /**fggfh**/
 
             if (msg.equals(ConnectionCommands.END)) {
                 sendMsgToClient(ConnectionCommands.END);

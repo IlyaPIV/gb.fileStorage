@@ -9,17 +9,11 @@ import java.util.logging.Logger;
 public class ServerSettings {
 
     public static final int SERVER_PORT = 8189;
-    private final server.old.IOServer IOServer;
 
     private ServerSocket serverSocket;
 
     private ExecutorService executorService;
 
-    public static final Logger LOGGER = Logger.getLogger(IOServer.class.getName());
-
-    public ServerSettings(IOServer IOServer) {
-        this.IOServer = IOServer;
-    }
 
     public ServerSocket getServerSocket() {
         return serverSocket;
