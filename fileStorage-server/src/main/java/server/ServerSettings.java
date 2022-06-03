@@ -1,5 +1,7 @@
 package server;
 
+import server.old.IOServer;
+
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
@@ -7,16 +9,16 @@ import java.util.logging.Logger;
 public class ServerSettings {
 
     public static final int SERVER_PORT = 8189;
-    private final Server server;
+    private final server.old.IOServer IOServer;
 
     private ServerSocket serverSocket;
 
     private ExecutorService executorService;
 
-    public static final Logger LOGGER = Logger.getLogger(Server.class.getName());
+    public static final Logger LOGGER = Logger.getLogger(IOServer.class.getName());
 
-    public ServerSettings(Server server) {
-        this.server = server;
+    public ServerSettings(IOServer IOServer) {
+        this.IOServer = IOServer;
     }
 
     public ServerSocket getServerSocket() {
