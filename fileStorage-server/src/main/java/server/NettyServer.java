@@ -17,7 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NettyServer {
 
+    private FilesStorage filesStorageService;
+
     public NettyServer(){
+
+        filesStorageService = new FilesStorage();
 
         EventLoopGroup auth = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
@@ -35,7 +39,7 @@ public class NettyServer {
 
                             socketChannel.pipeline().addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
                                                             new ObjectEncoder(),
-                                                            new ClientConnectionHandler());
+                                                            new ClientConnectionHandler(filesStorageService));
                             log.debug("Connection is initialized.");
                         }
                     });

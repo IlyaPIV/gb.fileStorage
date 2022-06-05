@@ -2,8 +2,6 @@ package server;
 
 import server.old.NioServer;
 
-import java.io.IOException;
-
 public class BootServer {
     public static void main(String[] args) {
         //new Server();

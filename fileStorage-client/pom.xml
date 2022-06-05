@@ -82,7 +82,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com.gb.filestorage.filestorageclient/com.gb.filestorage.filestorageclient.ClienMainApplication
+                                com.gb.filestorage.filestorageclient/com.gb.filestorage.filestorageclient.ClientMainApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

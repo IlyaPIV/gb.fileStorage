@@ -42,7 +42,8 @@ public class IOServer {
      * @throws IOException
      */
     private void startServer() throws IOException {
-        this.serverSettings = new ServerSettings(this);
+
+        this.serverSettings = new ServerSettings();
         this.serverSettings.setServerSocket(new ServerSocket(ServerSettings.SERVER_PORT));
         this.serverSettings.setExecutorService(Executors.newCachedThreadPool());
 

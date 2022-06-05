@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Logger;
@@ -250,7 +251,7 @@ public class IOClientHandler {
         //по хорошему не мешала бы оптимизация на случай потери пакета при передаче
         FilesStorage serverFS = IOServer.getFilesStorage();
 
-        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0);
+        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0, Path.of(FilesStorage.DIRECTORY));
 
         sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.GET_FILES_LIST,ConnectionCommands.OPER_START,serverFileList.size()));
 
@@ -267,7 +268,7 @@ public class IOClientHandler {
 
     /**
      * отправляет информацию о файле на клиента
-     * @param sf
+     * @param sf -
      */
     private void sendFileInfoToClient(ServerFile sf) {
 

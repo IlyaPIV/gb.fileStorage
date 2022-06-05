@@ -7,11 +7,15 @@ import java.util.List;
 
 public class ServerFilesListData implements CloudMessage{
 
-    List<ServerFile> fileList;
+    private final List<ServerFile> fileList;
 
     public ServerFilesListData(List<ServerFile> list) {
 
         this.fileList = list;
 
+    }
+
+    public List<ServerFile> getFileList() {
+        return fileList;
     }
 }
