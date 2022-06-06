@@ -12,13 +12,18 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 import serverFiles.ServerFile;
 
@@ -34,28 +39,27 @@ public class ClientMainController implements Initializable {
 
 
     private Stage mainWindow;
-    private NetworkConnection connection;
-
+    private AuthRegWindow logRegWindow;
     private NettyConnection nettyConnection;
-    private boolean terminalIsRunning;
+    private boolean isConnected;
 
-    private TerminalClient terminalClient;
+    private NetworkConnection connection; //old and not used
+    private boolean terminalIsRunning;  //old and not used
+    private TerminalClient terminalClient;  //old and not used
 
     @FXML
-    public VBox terminalWorkingArea;
+    public VBox terminalWorkingArea; //old and not used
     @FXML
-    public TextField terminalCmndLine;
+    public TextField terminalCmndLine;  //old and not used
     public StackPane serverHalf;
-
-
     @FXML
     public VBox serverWorkingArea;
     @FXML
-    public TextArea terminalDisplay;
+    public TextArea terminalDisplay; //old and not used
     @FXML
     private TextField infoField;
     @FXML
-    public Button btnTerminal;
+    public Button btnTerminal; //old and not used
     @FXML
     public Button button_share;
     @FXML
@@ -69,11 +73,11 @@ public class ClientMainController implements Initializable {
     @FXML
     public Button button_download;
     @FXML
+    public Button button_connect;
+    @FXML
     public ComboBox<String> disksBox;
-
     @FXML
     public TextField pathField;
-
     @FXML
     public TableView<ClientFileInfo> clientFilesTable;
     @FXML
@@ -87,11 +91,6 @@ public class ClientMainController implements Initializable {
         updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
         prepareServerTable();
 
-        /*
-        * отключено IO соединение
-         */
-        //connectToServerIO();
-        //
         try {
             createConnectionToServer();
         } catch (IOException e) {
@@ -101,20 +100,6 @@ public class ClientMainController implements Initializable {
         Thread inChannelListener = new Thread(nettyConnection::messageReader);
         inChannelListener.setDaemon(true);
         inChannelListener.start();
-
-        /*
-         * место под авторизацию
-         */
-        log.debug("Пользователь успешно авторизирован на сервере");
-        nettyConnection.setAuthorizated(true);
-
-        /*
-         * обновление списка файлов - потом перенесётся в другое место к блоку авторизации
-         */
-        if (nettyConnection.isAuthorizated()){
-            updateServerFilesList();
-        }
-
 
 
         Platform.runLater(()->{
@@ -126,6 +111,55 @@ public class ClientMainController implements Initializable {
                 closeTerminalConnection();
             });
         });
+
+        setDisableButtonsUI();
+
+
+        /*
+         * всё что ниже - будет удалено
+         */
+
+        log.debug("Пользователь успешно авторизирован на сервере");
+        nettyConnection.setAuthorizated(true);
+
+        /*
+         * обновление списка файлов - потом перенесётся в другое место к блоку авторизации
+         */
+        if (nettyConnection.isAuthorizated()){
+            updateServerFilesList();
+        }
+
+
+    }
+
+    /**
+     * подготавливает и открывает окно авторизации/регистрации
+     */
+    private void openLogRegWindow() {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("authreg-view.fxml"));
+        mainWindow = (Stage) infoField.getScene().getWindow();
+        try {
+
+            Parent root = fxmlLoader.load();
+
+            Stage logRegStage = new Stage();
+
+            logRegStage.setTitle("Log in to server");
+            logRegStage.setScene(new Scene(root, 400, 150));
+
+            logRegWindow = fxmlLoader.getController();
+            logRegWindow.setMainController(this);
+
+            logRegStage.getScene().getStylesheets().add(getClass().getResource("css/StyleRegLoginWindow.css").toExternalForm());
+            logRegStage.initStyle(StageStyle.UTILITY);
+            logRegStage.initModality(Modality.WINDOW_MODAL);
+            logRegStage.initOwner(mainWindow);
+
+            logRegStage.show();
+
+        } catch (IOException e) {
+            log.error("Failed to open log/reg window");
+        }
     }
 
     /**
@@ -157,21 +191,6 @@ public class ClientMainController implements Initializable {
         infoField.setText(text.toUpperCase());
     }
 
-    /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
-     */
-    private void connectToServerIO() {
-        if (this.connection == null || this.connection.isSocketClosed()) {
-            this.connection = new NetworkConnection(this, "login", "pass");
-
-            boolean connected = connection.connectToServer();
-            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
-
-            connection.startWorkingThreadWithServer();
-        }
-
-        connection.tryToAuthOnServer();
-    }
 
     /**
     * подготавливает таблицу файлов на клиентской стороне
@@ -409,13 +428,6 @@ public class ClientMainController implements Initializable {
             if (Files.isDirectory(fileFullPath)) {
                 setInfoText("Can't send directory. Please, choose a file.");
             } else {
-
-                /*
-                * отключаем IO комманду
-                //connection.fileSendToServer(fileFullPath, fileName);
-                //connection.updateServersFilesList();
-                 */
-
                 try {
                     nettyConnection.sendFileToServer(fileFullPath);
                     setInfoText("File was transferred");
@@ -449,10 +461,60 @@ public class ClientMainController implements Initializable {
             } catch (IOException e) {
                 log.error("Failed to send downloading request.");
             }
-
         }
-
     }
+
+    /**
+     * если соединения с сервером нет - открывает окно регистрации/авторизации
+     * если соединение с сервером подключено - отключает его
+     * @param actionEvent - не виляет
+     */
+    public void switchConnect(ActionEvent actionEvent) {
+        if (!isConnected) {
+            openLogRegWindow();
+            log.debug("Opening auth/reg window");
+            updateServerFilesList();
+
+            this.isConnected = !isConnected; //временно - отключить потом
+            setDisableButtonsUI(); //временно - отключить потом
+
+        } else {
+            closeNettyConnection();
+            log.debug("Closing connection with server");
+            this.isConnected = !isConnected;
+            setDisableButtonsUI();
+        }
+    }
+
+    /**
+     * принудительно закрывает соединение с сервером
+     */
+    private void closeNettyConnection() {
+        /*
+        * тут будет код
+         */
+        serverFilesTable.getItems().clear();
+    }
+
+
+    /**
+    * устанавливает доступность кнопок в зависимости от статуса соединения с сервером
+     */
+    private void setDisableButtonsUI() {
+        button_addLink.setDisable(!isConnected);
+        button_delete.setDisable(!isConnected);
+        button_download.setDisable(!isConnected);
+        button_share.setDisable(!isConnected);
+        button_rename.setDisable(!isConnected);
+        button_upload.setDisable(!isConnected);
+        serverFilesTable.setDisable(!isConnected);
+        button_connect.setStyle(isConnected ? "-fx-background-color: green" : "-fx-background-color: red");
+    }
+
+
+    /*
+    * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================
+     */
 
     /**
      * обработчик нажатия кнопки терминала
@@ -462,7 +524,6 @@ public class ClientMainController implements Initializable {
     public void cmdTerminal(ActionEvent actionEvent) {
         switchTerminal();
     }
-
 
     /**
      * переключает режим окна сервера с табличного вида на терминальное соединение и обратно
@@ -542,5 +603,20 @@ public class ClientMainController implements Initializable {
         }
     }
 
+    /**
+     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
+     */
+    private void connectToServerIO() {
+        if (this.connection == null || this.connection.isSocketClosed()) {
+            this.connection = new NetworkConnection(this, "login", "pass");
+
+            boolean connected = connection.connectToServer();
+            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
+
+            connection.startWorkingThreadWithServer();
+        }
+
+        connection.tryToAuthOnServer();
+    }
 
 }

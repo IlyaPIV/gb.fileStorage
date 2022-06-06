@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="150.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gb.filestorage.filestorageclient.AuthRegWindow">
+   <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <HBox alignment="CENTER" prefHeight="50.0" prefWidth="200.0" spacing="10.0">
+         <padding>
+            <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
+         </padding>
+         <Label alignment="CENTER_RIGHT" prefHeight="40.0" prefWidth="150.0" text="Login:" textFill="#9e2424" underline="true">
+            <font>
+               <Font name="System Bold Italic" size="28.0" />
+            </font>
+         </Label>
+         <TextField fx:id="loginField" prefHeight="40.0" prefWidth="220.0" promptText="enter your login here">
+            <font>
+               <Font size="18.0" />
+            </font>
+            <padding>
+               <Insets left="5.0" />
+            </padding>
+         </TextField>
+      </HBox>
+      <HBox alignment="CENTER" layoutX="10.0" layoutY="60.0" prefHeight="50.0" prefWidth="200.0" spacing="10.0">
+         <padding>
+            <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
+         </padding>
+         <Label alignment="CENTER_RIGHT" prefHeight="40.0" prefWidth="150.0" text="Password:" textFill="#9e2424" underline="true">
+            <font>
+               <Font name="System Bold Italic" size="28.0" />
+            </font>
+         </Label>
+         <PasswordField fx:id="passwordField" prefHeight="40.0" prefWidth="220.0" promptText="*********">
+            <font>
+               <Font size="18.0" />
+            </font>
+         </PasswordField>
+      </HBox>
+      <HBox alignment="CENTER" layoutX="10.0" layoutY="85.0" prefHeight="50.0" prefWidth="200.0" spacing="100.0">
+         <padding>
+            <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
+         </padding>
+         <Button fx:id="btnRegistration" mnemonicParsing="false" prefHeight="40.0" prefWidth="140.0" text="Registration" textFill="#b5b5b5">
+            <font>
+               <Font name="System Bold" size="18.0" />
+            </font>
+         </Button>
+         <Button fx:id="btnLogin" layoutX="150.0" layoutY="15.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="140.0" text="Log In" textFill="#b5b5b5">
+            <font>
+               <Font name="System Bold" size="20.0" />
+            </font>
+         </Button>
+      </HBox>
+      <padding>
+         <Insets bottom="5.0" top="5.0" />
+      </padding>
+   </VBox>
+</AnchorPane>

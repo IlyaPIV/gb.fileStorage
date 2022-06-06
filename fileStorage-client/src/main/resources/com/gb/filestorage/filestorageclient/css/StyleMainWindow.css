@@ -62,3 +62,10 @@
     -fx-background-color: black;
     -fx-text-fill: white;
 }
+
+#button_connect {
+    -fx-background-image: url("../png/png_switch-on-off.png");
+    -fx-background-size: 80 80;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+}

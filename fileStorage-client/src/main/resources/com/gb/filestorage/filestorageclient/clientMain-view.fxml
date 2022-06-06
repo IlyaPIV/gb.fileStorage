@@ -6,7 +6,6 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -70,11 +69,17 @@
                      <Font name="System Bold" size="16.0" />
                   </font>
                </Button>
-               <ProgressIndicator progress="0.0">
+               <Button fx:id="button_connect" alignment="CENTER_RIGHT" focusTraversable="false" mnemonicParsing="false" onAction="#switchConnect" prefHeight="84.0" prefWidth="84.0">
                   <VBox.margin>
                      <Insets bottom="20.0" top="20.0" />
                   </VBox.margin>
-               </ProgressIndicator>
+                  <padding>
+                     <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                  </padding>
+                  <font>
+                     <Font name="System Bold" size="20.0" />
+                  </font>
+               </Button>
                <Button fx:id="button_download" focusTraversable="false" mnemonicParsing="false" onAction="#getFileFromServer" prefHeight="29.0" prefWidth="74.0" text="&lt;&lt;">
                   <VBox.margin>
                      <Insets bottom="15.0" top="15.0" />
@@ -181,7 +186,7 @@
          </StackPane>
          <HBox maxHeight="25.0" minHeight="25.0" prefHeight="25.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
             <TextField fx:id="infoField" alignment="CENTER" editable="false" focusTraversable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO" HBox.hgrow="ALWAYS" />
-            <Button fx:id="btnTerminal" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />
+            <Button fx:id="btnTerminal" visible="false" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />
          </HBox>
       </VBox>
    </HBox>
