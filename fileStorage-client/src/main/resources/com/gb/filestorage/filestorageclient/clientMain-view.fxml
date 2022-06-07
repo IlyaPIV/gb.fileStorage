@@ -142,18 +142,18 @@
                         <Insets left="15.0" right="15.0" />
                      </HBox.margin>
                      <padding>
-                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                        <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
                         <Font size="14.0" />
                      </font>
                   </Button>
-                  <Button fx:id="button_addLink" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Add by link" textAlignment="CENTER" HBox.hgrow="ALWAYS">
+                  <Button fx:id="button_addLink" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Add link" textAlignment="CENTER" HBox.hgrow="ALWAYS">
                      <HBox.margin>
                         <Insets left="15.0" right="15.0" />
                      </HBox.margin>
                      <padding>
-                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                        <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
                         <Font size="14.0" />
@@ -164,7 +164,7 @@
                         <Insets left="15.0" right="15.0" />
                      </HBox.margin>
                      <padding>
-                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                        <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
                         <Font size="14.0" />
@@ -178,7 +178,7 @@
                         <Font size="14.0" />
                      </font>
                      <padding>
-                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+                        <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                   </Button>
                </HBox>

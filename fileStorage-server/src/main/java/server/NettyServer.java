@@ -51,6 +51,7 @@ public class NettyServer {
         } catch (Exception e) {
             log.error("Exception: " + e.getMessage());
         } finally {
+            log.debug("Shooting down event loop groups.");
             auth.shutdownGracefully();
             worker.shutdownGracefully();
         }

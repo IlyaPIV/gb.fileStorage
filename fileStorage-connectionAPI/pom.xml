@@ -7,10 +7,13 @@
         <groupId>org.example</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.gb.filestorage.API</groupId>
     <artifactId>fileStorage-connectionAPI</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>fileStorage-connectionAPI</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

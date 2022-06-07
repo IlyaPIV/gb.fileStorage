@@ -32,7 +32,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
     @Override
     protected void channelRead0(ChannelHandlerContext chc, CloudMessage inMessage) throws Exception {
 
-        log.debug("incoming message of type: "+inMessage.getClass().toString());
+        log.debug("incoming message of type: " + inMessage.getClass().toString());
         if (inMessage instanceof FileDownloadRequest fdr) {
 
             try {
@@ -68,8 +68,8 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
 
                 chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(userID, currentDirectory)));
             } catch (IOException e) {
-                log.error("error with saving file on server!!!");
-                chc.writeAndFlush(new ErrorAnswerMessage("error with saving file on server!!!"));
+                log.error("Error with saving file on server!!!");
+                chc.writeAndFlush(new ErrorAnswerMessage("Error with saving file on server!!!"));
             }
 
         } else if (inMessage instanceof StoragePathUpRequest) {
@@ -92,8 +92,33 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory IN."));
             }
 
+        } else if (inMessage instanceof AuthRegRequest request) {
+            if (request.isOperationReg()) {
+                log.debug("Attempt to reg new user");
+                chc.writeAndFlush(tryToRegUser(request));
+                log.debug("Answer was send to: " + chc.channel().toString());
+            } else {
+                log.debug("Attempt to sign in on server");
+                chc.writeAndFlush(tryToAuthUser(request));
+                log.debug("Answer was send to: " + chc.channel().toString());
+            }
         }
 
+
+    }
+
+    private AuthRegAnswer tryToAuthUser(AuthRegRequest request) {
+        /*
+         * место под сервис авторизации
+         */
+        return new AuthRegAnswer(true,"all is ok", false);
+    }
+
+    private AuthRegAnswer tryToRegUser(AuthRegRequest request) {
+        /*
+         * место под сервис авторизации
+         */
+        return new AuthRegAnswer(false, "Can't reg new user - service is offline.", true);
 
     }
 }
