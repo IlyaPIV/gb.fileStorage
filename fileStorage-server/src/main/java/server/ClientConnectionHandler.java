@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import messages.*;
+import server.hibernate.DBConnector;
+import server.hibernate.entity.UsersEntity;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,14 +14,15 @@ import java.nio.file.Path;
 public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMessage> {
 
     private final FilesStorage filesStorage;
-
+    private final DBConnector dbConnector;
     private final Path usersHomeDirectory;
     private Path currentDirectory;
 
     private int userID;
 
-    public ClientConnectionHandler(FilesStorage filesStorage){
+    public ClientConnectionHandler(FilesStorage filesStorage, DBConnector dbConnector){
         this.filesStorage = filesStorage;
+        this.dbConnector = dbConnector;
 
         this.userID = 666;
 
@@ -118,6 +121,15 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         /*
          * место под сервис авторизации
          */
+        try {
+            dbConnector.addUser(request.getLogin(), request.getPassword());
+        } catch (Exception e) {
+            return new AuthRegAnswer(false, e.getMessage(), true);
+        }
+
+//        if (dbConnector.findUserByLogin(request.getLogin()) == null) {
+//            log.debug("Пользователь с таким именем не найден");
+//        }
         return new AuthRegAnswer(false, "Can't reg new user - service is offline.", true);
 
     }
