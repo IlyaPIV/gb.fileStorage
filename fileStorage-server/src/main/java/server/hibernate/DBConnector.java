@@ -21,12 +21,19 @@ public class DBConnector {
     public void addUser(String login, String password) {
 
         Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
-        UsersEntity newUser = new UsersEntity(login, password);
-        log.debug(newUser.toString());
-        session.save(newUser);
-        session.getTransaction().commit();
-        session.close();
+        try {
+            session.beginTransaction();
+            UsersEntity newUser = new UsersEntity(login, password);
+            log.debug(newUser.toString());
+            session.save(newUser);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        } finally {
+            session.getTransaction().commit();
+        }
+
+
+        //session.close();
     }
 
     /**
@@ -38,17 +45,23 @@ public class DBConnector {
     public UsersEntity findUserByLogin(String login) {
 
         Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
-        UsersEntity userDB;
-//        UsersEntity userDB = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class)
-//                .getSingleResult();
-        List<UsersEntity> users = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class).list();
-        session.getTransaction().commit();
-        session.close();
 
-        if (users.isEmpty()) return null;
+        UsersEntity userDB = null;
+        try {
+            session.beginTransaction();
+            userDB = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class)
+                    .getSingleResult();
+         //   List<UsersEntity> users = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class).list();
 
-        userDB = users.get(0);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        } finally {
+            session.getTransaction().commit();
+        }
+
+//        session.close();
+
+//        userDB = users.get(0);
         log.debug("Fonded user from DB = "+userDB);
 
         return userDB;

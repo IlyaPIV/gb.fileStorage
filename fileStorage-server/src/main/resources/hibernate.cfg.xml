@@ -4,34 +4,28 @@
     "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 <hibernate-configuration>
   <session-factory>
-<!--    <property name="connection.url"/>-->
-<!--    <property name="connection.driver_class"/>-->
-    <!-- <property name="connection.username"/> -->
-    <!-- <property name="connection.password"/> -->
 
     <!-- DB schema will be updated if needed -->
     <property name="hibernate.hbm2ddl.auto">update</property>
 
-<!--    <property name="connection.url">postgres://roraoqrcxieuyi:8c7fd01f9a363828487e5c78a842e78d7df90b97687f461f817144b077d02d75@ec2-3-248-121-12.eu-west-1.compute.amazonaws.com:5432/de9oban5pa49j0</property>-->
-<!--      <property name="connection.username">roraoqrcxieuyi</property>-->
-<!--      <property name="connection.password">8c7fd01f9a363828487e5c78a842e78d7df90b97687f461f817144b077d02d75</property>-->
-<!--      <property name=".connection.driver_class">org.postgresql.Driver</property>-->
 
     <property name="hibernate.connection.username">roraoqrcxieuyi</property>
     <property name="hibernate.connection.password">8c7fd01f9a363828487e5c78a842e78d7df90b97687f461f817144b077d02d75</property>
     <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
-<!--    <property name="hibernate.connection.url">postgres://roraoqrcxieuyi:8c7fd01f9a363828487e5c78a842e78d7df90b97687f461f817144b077d02d75@ec2-3-248-121-12.eu-west-1.compute.amazonaws.com:5432/de9oban5pa49j0</property>-->
-      <property name="hibernate.connection.url">jdbc:postgresql://ec2-3-248-121-12.eu-west-1.compute.amazonaws.com:5432/de9oban5pa49j0</property>
+    <property name="hibernate.connection.url">jdbc:postgresql://ec2-3-248-121-12.eu-west-1.compute.amazonaws.com:5432/de9oban5pa49j0</property>
     <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
     <property name="show_sql">true</property>
+    <property name="hibernate.format_sql">true</property>
+    <property name="default_schema">public</property>
 
-<!--    <property name="format_sql">true</property>-->
 
+    <property name="hibernate.current_session_context_class">thread</property>
 
-    <mapping class="server.hibernate.entity.DirectoriesEntity"/>
-    <mapping class="server.hibernate.entity.LinksEntity"/>
-    <mapping class="server.hibernate.entity.RealFilesEntity"/>
+<!--    <mapping class="server.hibernate.entity.DirectoriesEntity"/>-->
+<!--    <mapping class="server.hibernate.entity.LinksEntity"/>-->
+<!--    <mapping class="server.hibernate.entity.RealFilesEntity"/>-->
     <mapping class="server.hibernate.entity.UsersEntity"/>
+
 
   </session-factory>
 </hibernate-configuration>

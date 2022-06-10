@@ -127,9 +127,15 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             return new AuthRegAnswer(false, e.getMessage(), true);
         }
 
-//        if (dbConnector.findUserByLogin(request.getLogin()) == null) {
-//            log.debug("Пользователь с таким именем не найден");
+//        try {
+//            if (dbConnector.findUserByLogin(request.getLogin()) == null) {
+//                log.debug("Пользователь с таким именем не найден");
+//            }
+//        } catch (Exception e) {
+//            return new AuthRegAnswer(false, e.getMessage(), true);
 //        }
+
+
         return new AuthRegAnswer(false, "Can't reg new user - service is offline.", true);
 
     }

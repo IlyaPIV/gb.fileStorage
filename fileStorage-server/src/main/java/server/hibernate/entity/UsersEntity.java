@@ -2,11 +2,16 @@ package server.hibernate.entity;
 
 import jakarta.persistence.*;
 
+import java.io.ObjectStreamClass;
+import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
 @Table(name = "users", schema = "public", catalog = "de9oban5pa49j0")
-public class UsersEntity {
+public class UsersEntity implements Serializable {
+
+    private static final long serialVersionUID = 1497017403909958553L;
+
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "user_id")
@@ -24,6 +29,15 @@ public class UsersEntity {
     public UsersEntity(String login, String password) {
         this.login = login;
         this.password = password;
+    }
+
+    /**
+     * создание текста запроса на поиск пользователя по логину
+     * @param login - логин пользователя
+     * @return строку с текстом запроса к БД на PostgresSQL
+     */
+    public static String queryPostgresFindByLogin(String login){
+        return String.format("SELECT u FROM UsersEntity u WHERE u.login = '%s'", login);
     }
 
     public int getUserId() {
@@ -64,6 +78,10 @@ public class UsersEntity {
         return Objects.hash(userId, login, password);
     }
 
+    /*
+     * ================================= ЗАПРОСЫ К БД ===============================
+     */
+
     @Override
     public String toString() {
         return "User: {" +
@@ -71,18 +89,5 @@ public class UsersEntity {
                 ", login='" + login + '\'' +
                 ", password='" + password + '\'' +
                 '}';
-    }
-
-    /*
-     * ================================= ЗАПРОСЫ К БД ===============================
-     */
-
-    /**
-     * создание текста запроса на поиск пользователя по логину
-     * @param login - логин пользователя
-     * @return строку с текстом запроса к БД на PostgresSQL
-     */
-    public static String queryPostgresFindByLogin(String login){
-        return String.format("SELECT u FROM users u WHERE u.login = '%s'", login);
     }
 }
