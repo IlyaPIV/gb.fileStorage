@@ -15,20 +15,22 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
 
     private final FilesStorage filesStorage;
     private final DBConnector dbConnector;
-    private final Path usersHomeDirectory;
+    private Path usersHomeDirectory;
     private Path currentDirectory;
-
+    private Path userServerDirectory;
     private int userID;
 
     public ClientConnectionHandler(FilesStorage filesStorage, DBConnector dbConnector){
         this.filesStorage = filesStorage;
         this.dbConnector = dbConnector;
+    }
 
-        this.userID = 666;
-
+    private void setUserSettings(String login) {
         this.currentDirectory = filesStorage.getUsersStartPath(userID);
-
         this.usersHomeDirectory = currentDirectory;
+        this.userServerDirectory = filesStorage.getUsersServerPath(login);
+
+        log.debug("Стартовая директория пользователя: "+currentDirectory.toString());
     }
 
 
@@ -114,29 +116,26 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         /*
          * место под сервис авторизации
          */
+        try {
+            this.userID = dbConnector.authentication(request.getLogin(), request.getPassword());
+            setUserSettings(request.getLogin());
+            log.debug("Авторизация прошла успешно. Пользовательские настройки завершены.");
+        } catch (Exception e) {
+            return new AuthRegAnswer(false, e.getMessage(), false);
+        }
+
         return new AuthRegAnswer(true,"all is ok", false);
     }
 
     private AuthRegAnswer tryToRegUser(AuthRegRequest request) {
-        /*
-         * место под сервис авторизации
-         */
+
         try {
-            dbConnector.addUser(request.getLogin(), request.getPassword());
+            dbConnector.registration(request.getLogin(), request.getPassword());
         } catch (Exception e) {
             return new AuthRegAnswer(false, e.getMessage(), true);
         }
 
-//        try {
-//            if (dbConnector.findUserByLogin(request.getLogin()) == null) {
-//                log.debug("Пользователь с таким именем не найден");
-//            }
-//        } catch (Exception e) {
-//            return new AuthRegAnswer(false, e.getMessage(), true);
-//        }
-
-
-        return new AuthRegAnswer(false, "Can't reg new user - service is offline.", true);
+        return new AuthRegAnswer(true, "Пользователь успешно зарегестрирован", true);
 
     }
 }

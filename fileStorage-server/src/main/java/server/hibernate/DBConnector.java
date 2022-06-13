@@ -1,69 +1,64 @@
 package server.hibernate;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
+import server.AuthService;
 import server.hibernate.entity.UsersEntity;
 
-import java.util.List;
-
 @Slf4j
-public class DBConnector {
-
-    private final SessionFactory sessionFactory;
+public class DBConnector implements AuthService {
 
     public DBConnector() {
-        this.sessionFactory = HibernateSessionFactoryUtil.getSessionFactory();
+
     }
 
 
-    public void addUser(String login, String password) {
-
-        Session session = sessionFactory.getCurrentSession();
-        try {
-            session.beginTransaction();
-            UsersEntity newUser = new UsersEntity(login, password);
-            log.debug(newUser.toString());
-            session.save(newUser);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        } finally {
-            session.getTransaction().commit();
-        }
-
-
-        //session.close();
-    }
-
-    /**
-     * поиск существующей записи в БД по имени пользователя
-     * @param login - строковое значение с именем пользователя
-     * @return - ссылка на запись в БД (NULL в случае отстуствии записей)
+    /*
+    * ============================ AUTH SERVICE =========================
      */
 
-    public UsersEntity findUserByLogin(String login) {
+    @Override
+    public void registration(String login, String password) throws RuntimeException{
 
-        Session session = sessionFactory.getCurrentSession();
+        if (!HibernateRequests.isUserAlreadyExists(login)) {
+            log.debug("Пользователь с таким именем в базе не найден!");
+            HibernateRequests.addNewUser(login, password);
+            log.debug("Зарегестрирован новый пользователь!");
+            //получить ID нового пользователя и подготовить его стартовую директорию в БД
 
-        UsersEntity userDB = null;
-        try {
-            session.beginTransaction();
-            userDB = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class)
-                    .getSingleResult();
-         //   List<UsersEntity> users = session.createQuery(UsersEntity.queryPostgresFindByLogin(login), UsersEntity.class).list();
+            //создаём папку пользователя на сервере
 
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        } finally {
-            session.getTransaction().commit();
+        } else {
+            log.debug("Пользователь с таким именем уже существует!");
+            throw new RuntimeException("Пользователь с таким именем уже существует!");
         }
 
-//        session.close();
-
-//        userDB = users.get(0);
-        log.debug("Fonded user from DB = "+userDB);
-
-        return userDB;
     }
+
+
+    @Override
+    public int authentication(String login, String password) {
+        if (HibernateRequests.isUserAlreadyExists(login)) {
+            log.debug("Пользователь существует - проверяем пароль");
+
+            int userId = HibernateRequests.getUserID(login, password);
+            if (userId==Integer.MIN_VALUE) {
+                log.debug("Имя или пароль пользователя не верны!");
+                throw new RuntimeException("Имя или пароль пользователя не верны! Попробуйте ещё");
+            } else {
+                log.debug(String.format("ID пользователя = %s. Введённые данные верны", userId));
+                return userId;
+            }
+
+        } else {
+            log.debug("Пользователь с таким именем не найден в базе");
+            throw new RuntimeException("Пользователь с таким именем не найден в базе");
+        }
+    }
+
+    /*
+     * ============================ SERVER COMMANDS SERVICE =========================
+     */
+
+
+
 }

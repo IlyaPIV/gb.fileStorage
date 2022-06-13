@@ -2,7 +2,7 @@ package server.hibernate.entity;
 
 import jakarta.persistence.*;
 
-import java.io.ObjectStreamClass;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -10,7 +10,7 @@ import java.util.Objects;
 @Table(name = "users", schema = "public", catalog = "de9oban5pa49j0")
 public class UsersEntity implements Serializable {
 
-    private static final long serialVersionUID = 1497017403909958553L;
+//    private static final long serialVersionUID = 1497017403909958553L;
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -31,14 +31,6 @@ public class UsersEntity implements Serializable {
         this.password = password;
     }
 
-    /**
-     * создание текста запроса на поиск пользователя по логину
-     * @param login - логин пользователя
-     * @return строку с текстом запроса к БД на PostgresSQL
-     */
-    public static String queryPostgresFindByLogin(String login){
-        return String.format("SELECT u FROM UsersEntity u WHERE u.login = '%s'", login);
-    }
 
     public int getUserId() {
         return userId;
@@ -78,9 +70,6 @@ public class UsersEntity implements Serializable {
         return Objects.hash(userId, login, password);
     }
 
-    /*
-     * ================================= ЗАПРОСЫ К БД ===============================
-     */
 
     @Override
     public String toString() {

@@ -4,27 +4,19 @@ public interface AuthService {
 
     /**
      * метод регистрации новых пользователей
-     * @param login
-     * @param password
-     * @return true - если новый пользователь успешно добавлен в базу
-     * false - в случае ошибки
+     * @param login - имя пользователя
+     * @param password - пароль пользователя
      */
-    boolean registration(String login, String password);
-
-    /**
-     * метод для проверки существования такого пользователя
-     * @param login
-     * @return true - если пользователь есть в базе
-     * false - если такого зарегестрированного пользователя нет
-     */
-    boolean userExist(String login);
+    void registration(String login, String password);
 
     /**
      * метод для авторизации пользователей
-     * @param login
-     * @param password
+     * @param login - имя пользоватя
+     * @param password - пароль пользователя
      * @return true - в случае если такой пользователь зарегестрирован и указан правильный пароль
      * false - в случае неверных значений
      */
-    boolean authentication(String login, String password);
+    int authentication(String login, String password);
+
+
 }
