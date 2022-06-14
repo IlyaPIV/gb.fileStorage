@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import messages.*;
 import server.hibernate.DBConnector;
+import server.hibernate.entity.DirectoriesEntity;
 import server.hibernate.entity.UsersEntity;
 
 import java.io.IOException;
@@ -25,12 +26,14 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         this.dbConnector = dbConnector;
     }
 
-    private void setUserSettings(String login) {
+    private void setUserSettings(String login) throws RuntimeException{
+        DirectoriesEntity homeDir = DBConnector.getUserHomeDir(userID);
+        log.debug("Ссылка на стартовую директорию: "+homeDir);
         this.currentDirectory = filesStorage.getUsersStartPath(userID);
         this.usersHomeDirectory = currentDirectory;
         this.userServerDirectory = filesStorage.getUsersServerPath(login);
 
-        log.debug("Стартовая директория пользователя: "+currentDirectory.toString());
+        log.debug("Стартовая директория пользователя: "+userServerDirectory.toString());
     }
 
 

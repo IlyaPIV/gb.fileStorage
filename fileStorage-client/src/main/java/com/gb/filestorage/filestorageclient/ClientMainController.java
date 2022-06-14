@@ -436,7 +436,7 @@ public class ClientMainController implements Initializable {
      */
     public void switchOnConnection(){
         log.debug("Connection with server turned on");
-        this.isConnected = true; //временно - отключить потом
+        this.isConnected = true;
         setDisableButtonsUI(); //временно - отключить потом
 
         updateServerFilesList();

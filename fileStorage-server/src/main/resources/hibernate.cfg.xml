@@ -21,9 +21,9 @@
 
     <property name="hibernate.current_session_context_class">thread</property>
 
-<!--    <mapping class="server.hibernate.entity.DirectoriesEntity"/>-->
-<!--    <mapping class="server.hibernate.entity.LinksEntity"/>-->
-<!--    <mapping class="server.hibernate.entity.RealFilesEntity"/>-->
+    <mapping class="server.hibernate.entity.DirectoriesEntity"/>
+    <mapping class="server.hibernate.entity.LinksEntity"/>
+    <mapping class="server.hibernate.entity.RealFilesEntity"/>
     <mapping class="server.hibernate.entity.UsersEntity"/>
 
 

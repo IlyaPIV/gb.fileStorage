@@ -2,6 +2,7 @@ package server.hibernate;
 
 import lombok.extern.slf4j.Slf4j;
 import server.AuthService;
+import server.hibernate.entity.DirectoriesEntity;
 import server.hibernate.entity.UsersEntity;
 
 @Slf4j
@@ -10,7 +11,6 @@ public class DBConnector implements AuthService {
     public DBConnector() {
 
     }
-
 
     /*
     * ============================ AUTH SERVICE =========================
@@ -21,11 +21,11 @@ public class DBConnector implements AuthService {
 
         if (!HibernateRequests.isUserAlreadyExists(login)) {
             log.debug("Пользователь с таким именем в базе не найден!");
-            HibernateRequests.addNewUser(login, password);
-            log.debug("Зарегестрирован новый пользователь!");
+            int id = HibernateRequests.addNewUser(login, password);
+            log.debug("Зарегестрирован новый пользователь! ID = " + id);
             //получить ID нового пользователя и подготовить его стартовую директорию в БД
-
-            //создаём папку пользователя на сервере
+            HibernateRequests.createUserHomeDir(id, login);
+            log.debug("Добавлена в БД ссылка на стартовую директорию пользователя.");
 
         } else {
             log.debug("Пользователь с таким именем уже существует!");
@@ -59,6 +59,8 @@ public class DBConnector implements AuthService {
      * ============================ SERVER COMMANDS SERVICE =========================
      */
 
-
+    public static DirectoriesEntity getUserHomeDir(int userID) throws RuntimeException{
+        return HibernateRequests.getUserHomeDir(userID);
+    }
 
 }

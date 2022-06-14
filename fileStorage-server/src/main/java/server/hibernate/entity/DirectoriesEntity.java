@@ -21,6 +21,14 @@ public class DirectoriesEntity {
     @Column(name = "parent_dir")
     private Integer parentDir;
 
+    public DirectoriesEntity() {
+    }
+
+    public DirectoriesEntity(int userId, String dirName) {
+        this.userId = userId;
+        this.dirName = dirName;
+    }
+
     public int getDirId() {
         return dirId;
     }
