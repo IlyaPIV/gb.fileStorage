@@ -55,13 +55,24 @@ public class AuthRegWindow {
 
         if (answer.isResult()) {
             //ответ положительный
-            clientUI.switchOnConnection();
+            if (answer.isOperationReg()) {
+                Platform.runLater(()->{
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.setTitle("Operation is OK");
+                    alert.setHeaderText("New user was created on server. Now you can connect.");
+                    alert.setContentText(answer.getMessage());
 
-            Platform.runLater(()->{
-                Stage thisStage = (Stage) btnLogin.getScene().getWindow();
-                thisStage.close();
-            });
+                    alert.showAndWait();
+                });
+            }
+            else {
+                clientUI.switchOnConnection();
 
+                Platform.runLater(() -> {
+                    Stage thisStage = (Stage) btnLogin.getScene().getWindow();
+                    thisStage.close();
+                });
+            }
         } else {
             Platform.runLater(()->{
                 Alert alert = new Alert(Alert.AlertType.ERROR);

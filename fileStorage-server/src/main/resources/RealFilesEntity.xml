@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+                 version="3.0">
+
+    <entity class="server.hibernate.entity.RealFilesEntity">
+        <table name="realFiles" schema="public" catalog="de9oban5pa49j0"/>
+        <attributes>
+            <id name="fileId">
+                <column name="file_id"/>
+            </id>
+            <basic name="directoryId">
+                <column name="directory_id"/>
+            </basic>
+            <basic name="name">
+                <column name="name"/>
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

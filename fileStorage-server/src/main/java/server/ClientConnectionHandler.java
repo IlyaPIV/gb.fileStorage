@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import messages.*;
+import server.hibernate.DBConnector;
+import server.hibernate.entity.DirectoriesEntity;
+import server.hibernate.entity.UsersEntity;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,20 +15,25 @@ import java.nio.file.Path;
 public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMessage> {
 
     private final FilesStorage filesStorage;
-
-    private final Path usersHomeDirectory;
+    private final DBConnector dbConnector;
+    private Path usersHomeDirectory;
     private Path currentDirectory;
-
+    private Path userServerDirectory;
     private int userID;
 
-    public ClientConnectionHandler(FilesStorage filesStorage){
+    public ClientConnectionHandler(FilesStorage filesStorage, DBConnector dbConnector){
         this.filesStorage = filesStorage;
+        this.dbConnector = dbConnector;
+    }
 
-        this.userID = 666;
-
+    private void setUserSettings(String login) throws RuntimeException{
+        DirectoriesEntity homeDir = DBConnector.getUserHomeDir(userID);
+        log.debug("Ссылка на стартовую директорию: "+homeDir);
         this.currentDirectory = filesStorage.getUsersStartPath(userID);
-
         this.usersHomeDirectory = currentDirectory;
+        this.userServerDirectory = filesStorage.getUsersServerPath(login);
+
+        log.debug("Стартовая директория пользователя: "+userServerDirectory.toString());
     }
 
 
@@ -111,14 +119,26 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         /*
          * место под сервис авторизации
          */
+        try {
+            this.userID = dbConnector.authentication(request.getLogin(), request.getPassword());
+            setUserSettings(request.getLogin());
+            log.debug("Авторизация прошла успешно. Пользовательские настройки завершены.");
+        } catch (Exception e) {
+            return new AuthRegAnswer(false, e.getMessage(), false);
+        }
+
         return new AuthRegAnswer(true,"all is ok", false);
     }
 
     private AuthRegAnswer tryToRegUser(AuthRegRequest request) {
-        /*
-         * место под сервис авторизации
-         */
-        return new AuthRegAnswer(false, "Can't reg new user - service is offline.", true);
+
+        try {
+            dbConnector.registration(request.getLogin(), request.getPassword());
+        } catch (Exception e) {
+            return new AuthRegAnswer(false, e.getMessage(), true);
+        }
+
+        return new AuthRegAnswer(true, "Пользователь успешно зарегестрирован", true);
 
     }
 }

@@ -1,6 +1,7 @@
 package server;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import messages.FileTransferData;
 import messages.StoragePathInRequest;
 import serverFiles.ServerFile;
@@ -14,12 +15,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+@Data @Slf4j
 public class FilesStorage {
 
     public static final String DIRECTORY = "fileStorage-server\\server_storage\\";
-
-
 
     public FilesStorage() {
 
@@ -166,7 +165,6 @@ public class FilesStorage {
      */
     public Path currentDirectoryIN(StoragePathInRequest msg, Path current) throws RuntimeException{
 
-
         try {
             Path newPath = current.resolve(msg.getDirName());
             return newPath;
@@ -174,5 +172,13 @@ public class FilesStorage {
             throw new RuntimeException("Не удалось перейти внутрь каталога");
         }
 
+    }
+
+    public Path getUsersServerPath(String login) {
+        Path dirPath = Path.of(DIRECTORY).normalize().resolve(login);
+        if (new File(dirPath.toString()).mkdir()) log.debug("new directory was created.");
+
+        log.debug("User's home DIR on server is: "+dirPath.toAbsolutePath());
+        return dirPath;
     }
 }
