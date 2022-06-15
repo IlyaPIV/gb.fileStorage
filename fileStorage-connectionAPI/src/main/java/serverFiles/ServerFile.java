@@ -2,16 +2,18 @@ package serverFiles;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 
 public class ServerFile implements Serializable {
+
+    public static final String HOME_DIR_NAME = " . . ";
 
     private String fileName;
     private long size;
     private LocalDateTime lastUpdate;
     private long serverID;
 
+    private boolean isDir;
 
     public String getFileName() {
         return fileName;
@@ -45,10 +47,19 @@ public class ServerFile implements Serializable {
         this.serverID = serverID;
     }
 
+    public boolean isDir() {
+        return isDir;
+    }
+
+    public void setDir(boolean dir) {
+        isDir = dir;
+    }
+
     @Override
     public String toString() {
         return "ServerFile{" +
-                "fileName='" + fileName + '\'' +
+                (isDir ? "directory='": "fileName='")
+                + fileName + '\'' +
                 ", size=" + size + " bytes"+
                 ", lastUpdate=" + lastUpdate +
                 ", serverID=" + serverID +

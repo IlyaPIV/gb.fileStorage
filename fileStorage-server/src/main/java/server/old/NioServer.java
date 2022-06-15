@@ -1,6 +1,8 @@
-package server;
+package server.old;
 
 import constants.ConnectionCommands;
+import server.FilesStorage;
+import server.ServerSettings;
 
 import java.io.File;
 import java.io.IOException;

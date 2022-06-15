@@ -2,8 +2,10 @@ package com.gb.filestorage.filestorageclient;
 
 import com.gb.filestorage.filestorageclient.files.ClientFileInfo;
 import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
+import com.gb.filestorage.filestorageclient.network_Netty.NettyConnection;
 import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
@@ -17,20 +19,24 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import lombok.extern.slf4j.Slf4j;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.ResourceBundle;
 
-
+@Slf4j
 public class ClientMainController implements Initializable {
 
 
     private Stage mainWindow;
     private NetworkConnection connection;
+
+    private NettyConnection nettyConnection;
     private boolean terminalIsRunning;
 
     private TerminalClient terminalClient;
@@ -84,8 +90,33 @@ public class ClientMainController implements Initializable {
         /*
         * отключено IO соединение
          */
-//        connectToServer();
-//
+        //connectToServerIO();
+        //
+        try {
+            createConnectionToServer();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+
+        Thread inChannelListener = new Thread(nettyConnection::messageReader);
+        inChannelListener.setDaemon(true);
+        inChannelListener.start();
+
+        /*
+         * место под авторизацию
+         */
+        log.debug("Пользователь успешно авторизирован на сервере");
+        nettyConnection.setAuthorizated(true);
+
+        /*
+         * обновление списка файлов - потом перенесётся в другое место к блоку авторизации
+         */
+        if (nettyConnection.isAuthorizated()){
+            updateServerFilesList();
+        }
+
+
+
         Platform.runLater(()->{
             mainWindow = (Stage) infoField.getScene().getWindow();
             mainWindow.setOnCloseRequest(windowEvent -> {
@@ -98,6 +129,26 @@ public class ClientMainController implements Initializable {
     }
 
     /**
+     * обновляет список файлов пользователя на сервере
+     */
+    private void updateServerFilesList() {
+        try {
+            nettyConnection.sendFilesListRequest();
+        } catch (IOException e) {
+            log.error("Ошибка отправки запроса списка файлов на сервер!");
+        }
+    }
+
+    /**
+     * создаёт подключение к серверу через Netty
+     */
+    private void createConnectionToServer() throws IOException {
+
+        this.nettyConnection = new NettyConnection(this);
+
+    }
+
+    /**
      * выводит текст серверного сообщения в инфо поле
      * @param text текст сообщения
      */
@@ -107,9 +158,9 @@ public class ClientMainController implements Initializable {
     }
 
     /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером
+     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
      */
-    private void connectToServer() {
+    private void connectToServerIO() {
         if (this.connection == null || this.connection.isSocketClosed()) {
             this.connection = new NetworkConnection(this, "login", "pass");
 
@@ -151,7 +202,7 @@ public class ClientMainController implements Initializable {
                         setText(null);
                         setStyle("");
                     } else {
-                        String text = String.format("%,d bytes", item);
+                        String text = String.format("%,.2f KB", item/1024.0);
                         if (item== -1L) text = "\t[DIR]";
                         setText(text);
                     }
@@ -189,6 +240,12 @@ public class ClientMainController implements Initializable {
      * подготавливает таблицу файлов на сервере
      */
     private void prepareServerTable(){
+
+        TableColumn<ServerFile,Boolean> isDirColumn = new TableColumn<>("is dir");
+        isDirColumn.setCellValueFactory(param ->
+                new SimpleBooleanProperty(param.getValue().isDir()));
+        isDirColumn.setVisible(false);
+
         TableColumn<ServerFile,String> fileNameColumn = new TableColumn<>("Name");
         fileNameColumn.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getFileName()));
@@ -208,7 +265,8 @@ public class ClientMainController implements Initializable {
                         setText(null);
                         setStyle("");
                     } else {
-                        String text = String.format("%,d bytes", item);
+                        String text = String.format("%,.2f KB", item/1024.0);
+                        if (item == -1L) text ="\t[DIR]";
                         setText(text);
                     }
                 }
@@ -224,6 +282,25 @@ public class ClientMainController implements Initializable {
 
         serverFilesTable.getColumns().addAll(fileNameColumn, fileSizeColumn, fileDataColumn);
         serverFilesTable.getSortOrder().add(fileNameColumn);
+
+
+        serverFilesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                if (mouseEvent.getClickCount() == 2) {
+                    if (serverFilesTable.getSelectionModel().getSelectedItem()!=null) {
+                        ServerFile sf = serverFilesTable.getSelectionModel().getSelectedItem();
+                        if (sf.isDir()) {
+                            try {
+                                nettyConnection.sendPathChangeRequest(sf);
+                            } catch (IOException e) {
+                                setInfoText(e.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -241,7 +318,7 @@ public class ClientMainController implements Initializable {
     /**
     * обновляет таблицу файлов на клиенте данными из указанной директории
     */
-    private void updateClientList(Path path){
+    public void updateClientList(Path path){
 
         try {
             pathField.setText(path.normalize().toAbsolutePath().toString());
@@ -251,7 +328,20 @@ public class ClientMainController implements Initializable {
         } catch (IOException e) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось обновить список", ButtonType.OK);
             alert.showAndWait();
+            log.error("Не удалось обновить список файлов на стороне клиента");
         }
+    }
+
+
+    /**
+     *
+     * @param files - список файлов, полученный от сервера
+     */
+    public void updateServerList(List<ServerFile> files){
+            log.debug("Количество файлов на сервере = "+files.size());
+            serverFilesTable.getItems().clear();
+            serverFilesTable.getItems().addAll(files);
+            serverFilesTable.sort();
     }
 
     /**
@@ -260,11 +350,11 @@ public class ClientMainController implements Initializable {
     @FXML
     private void btnExitAction(ActionEvent actionEvent){
 
-        //connection.closeConnection();
+        //connection.closeConnection();      //отключение IO соединения
 
         Platform.exit();
 
-        closeTerminalConnection();
+        //closeTerminalConnection();        //терминальное соединение отключено - поэтому не актуально
 
     }
 
@@ -290,7 +380,7 @@ public class ClientMainController implements Initializable {
 
     /**
      * возвращает имя выбранного файла на стороне клиента
-     * @return
+     * @return - строка с именем файла
      */
     private String getSelectedFileName() {
         return clientFilesTable.getSelectionModel().getSelectedItem().getFilename();
@@ -298,11 +388,12 @@ public class ClientMainController implements Initializable {
 
     /**
      * возвращает текущую дирректорию на стороне клиента
-     * @return
+     * @return - строка с адресом директории
      */
-    private String getCurrentPath() {
+    public String getCurrentPath() {
         return pathField.getText();
     }
+
 
     /**
      * обработчик нажатия кнопки отправки файла на сервер
@@ -318,18 +409,64 @@ public class ClientMainController implements Initializable {
             if (Files.isDirectory(fileFullPath)) {
                 setInfoText("Can't send directory. Please, choose a file.");
             } else {
-                setInfoText("File was transfered");
+
+                /*
+                * отключаем IO комманду
                 //connection.fileSendToServer(fileFullPath, fileName);
                 //connection.updateServersFilesList();
+                 */
+
+                try {
+                    nettyConnection.sendFileToServer(fileFullPath);
+                    setInfoText("File was transferred");
+                } catch (IOException e) {
+                    log.error("Error in file transfer to server!");
+                    setInfoText("Error in file transfer to server!");
+                }
+
+                //отправляем запрос на обновление списка файлов на сервере
+                try {
+                    nettyConnection.sendFilesListRequest();
+                } catch (IOException e) {
+                    log.error("Failed to update servers side files list!");
+                }
             }
         }
     }
 
+    /**
+     * обработчик нажатия кнопки получения файла с сервера
+     * @param actionEvent - ни на что не влияет
+     */
+    public void getFileFromServer(ActionEvent actionEvent) {
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+        if (selectedFile.isDir()) {
+            setInfoText("Can't download directory. Please, choose a file.");
+        } else {
+            try {
+                nettyConnection.getFileFromServer(selectedFile.getFileName(), selectedFile.getServerID());
+                log.debug(String.format("Отправлен запрос на скачивание файла с сервера: %s", selectedFile.getFileName()));
+            } catch (IOException e) {
+                log.error("Failed to send downloading request.");
+            }
+
+        }
+
+    }
+
+    /**
+     * обработчик нажатия кнопки терминала
+     * @param actionEvent - ни на что не влияет
+     */
     @FXML
     public void cmdTerminal(ActionEvent actionEvent) {
         switchTerminal();
     }
 
+
+    /**
+     * переключает режим окна сервера с табличного вида на терминальное соединение и обратно
+     */
     private void switchTerminal() {
 
         if (terminalClient == null) {
@@ -379,7 +516,7 @@ public class ClientMainController implements Initializable {
 
     /**
      * обработчик ввода строки командной панели терминала
-     * @param actionEvent
+     * @param actionEvent - ни на что не влияет
      */
     @FXML
     public void cmndTerminate(ActionEvent actionEvent) {
@@ -392,6 +529,9 @@ public class ClientMainController implements Initializable {
 
     }
 
+    /**
+     * закрывает терминальное соединение с сервером - не работает корректно
+     */
     private void closeTerminalConnection() {
         try {
             if (terminalClient!=null && terminalClient.isRunning()) {
@@ -401,5 +541,6 @@ public class ClientMainController implements Initializable {
             throw new RuntimeException(e);
         }
     }
+
 
 }
