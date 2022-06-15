@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>fileStorage-Server</module>
+        <module>fileStorage-server</module>
         <module>fileStorage-connectionAPI</module>
         <module>fileStorage-client</module>
     </modules>
@@ -20,7 +20,16 @@
     </properties>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.24</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.77.Final</version>
+        </dependency>
     </dependencies>
 
 </project>

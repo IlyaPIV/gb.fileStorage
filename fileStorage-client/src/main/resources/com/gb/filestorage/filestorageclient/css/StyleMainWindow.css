@@ -53,6 +53,17 @@
     -fx-background-padding-right: 2;
 }
 
+#button_addLink {
+    -fx-background-image: url("../png/png_link.png");
+    -fx-background-size: 29 29;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: left;
+    -fx-background-padding-left: 2;
+    -fx-background-padding-top: 2;
+    -fx-background-padding-down: 2;
+    -fx-background-padding-right: 2;
+}
+
 #terminalDisplay {
     -fx-background-color: black;
     -fx-text-fill: white;
@@ -61,4 +72,11 @@
 #terminalCmndLine {
     -fx-background-color: black;
     -fx-text-fill: white;
+}
+
+#button_connect {
+    -fx-background-image: url("../png/png_switch-on-off.png");
+    -fx-background-size: 80 80;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
 }

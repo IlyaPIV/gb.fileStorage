@@ -11,13 +11,15 @@ import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import lombok.extern.slf4j.Slf4j;
-
+import server.hibernate.DBConnector;
 
 
 @Slf4j
 public class NettyServer {
 
     private FilesStorage filesStorageService;
+
+    private DBConnector databaseConnector;
 
     public NettyServer(){
 
@@ -27,6 +29,16 @@ public class NettyServer {
         EventLoopGroup worker = new NioEventLoopGroup();
 
         try {
+
+            try {
+                this.databaseConnector = new DBConnector();
+                log.debug("Hibernate connection is created.");
+            } catch (Exception e) {
+                log.error("Failed create hibernate connection with Database.");
+                throw new Exception("Failed create hibernate connection with Database.");
+            }
+
+            log.debug("Server is ready.");
 
             ServerBootstrap server = new ServerBootstrap();
             server.group(auth, worker)
@@ -39,18 +51,19 @@ public class NettyServer {
 
                             socketChannel.pipeline().addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
                                                             new ObjectEncoder(),
-                                                            new ClientConnectionHandler(filesStorageService));
+                                                            new ClientConnectionHandler(filesStorageService, databaseConnector));
                             log.debug("Connection is initialized.");
                         }
                     });
 
             ChannelFuture future = server.bind(ServerSettings.SERVER_PORT).sync();
-            log.debug("Server is ready.");
             future.channel().closeFuture().sync();
+
 
         } catch (Exception e) {
             log.error("Exception: " + e.getMessage());
         } finally {
+            log.debug("Shooting down event loop groups.");
             auth.shutdownGracefully();
             worker.shutdownGracefully();
         }

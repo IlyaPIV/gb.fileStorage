@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import messages.*;
 import serverFiles.ServerFile;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ public class NettyConnection {
 
     private final ObjectDecoderInputStream inS;
     private final ObjectEncoderOutputStream outS;
+
     private final ClientMainController clientUI;
 
     private boolean isAuthorizated;
@@ -41,12 +43,17 @@ public class NettyConnection {
 
     }
 
+    public void closeConnection() throws IOException {
+        inS.close();
+        outS.close();
+    }
+
     /**
      * процедура прослушки входящего канала на сообщения в бесконечном цикле
      */
     public void messageReader(){
 
-            log.debug("Messages' listener channel is created");
+            log.debug("Created NETTY incoming messages listener channel");
             try {
                 while (true) {
                     try {
@@ -56,8 +63,10 @@ public class NettyConnection {
                             updateServerFilesList(sl);
                         } else if (inMsg instanceof FileTransferData) {
                             writeFileToClient((FileTransferData) inMsg);
+                            clientUI.updateClientList(Path.of(clientUI.getCurrentPath()));
+                        } else if (inMsg instanceof AuthRegAnswer answer) {
+                            clientUI.GetAuthRegAnswer(answer);
                         }
-                        clientUI.updateClientList(Path.of(clientUI.getCurrentPath()));
                     } catch (IOException e) {
                         log.error("Error with reading input channel");
                     } catch (ClassNotFoundException e) {
@@ -157,6 +166,11 @@ public class NettyConnection {
         write(new FileDownloadRequest(fileName, fileID));
     }
 
+    /**
+     * отправляет запрос на смену текущего каталога пользователя на стороне сервера
+     * @param sf - экземпляр класса серверного файла (в данном случае директория) на сервере
+     * @throws IOException - если произошла ошибка при отправке запроса
+     */
     public void sendPathChangeRequest(ServerFile sf) throws IOException {
         if (sf.getFileName().equals(ServerFile.HOME_DIR_NAME)) {
             try {
@@ -173,5 +187,14 @@ public class NettyConnection {
                 throw new IOException("Failed to send Path IN request");
             }
         }
+    }
+
+    /**
+     * отправляет запрос на авторизацию/регистрацию на сервере
+     * @param request - подготовленный на клиенте запрос с логином/паролем/типом операции
+     * @throws IOException - в случае ошибки отправки запроса
+     */
+    public void sendAuthRegRequest(AuthRegRequest request) throws IOException {
+        write(request);
     }
 }
