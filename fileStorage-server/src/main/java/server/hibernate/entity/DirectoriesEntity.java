@@ -2,6 +2,7 @@ package server.hibernate.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
@@ -20,6 +21,9 @@ public class DirectoriesEntity {
     @Basic
     @Column(name = "parent_dir")
     private Integer parentDir;
+    @Basic
+    @Column(name = "created")
+    private LocalDateTime dateTime;
 
     public DirectoriesEntity() {
     }
@@ -27,6 +31,7 @@ public class DirectoriesEntity {
     public DirectoriesEntity(int userId, String dirName) {
         this.userId = userId;
         this.dirName = dirName;
+        this.dateTime = LocalDateTime.now();
     }
 
     public int getDirId() {
@@ -61,16 +66,28 @@ public class DirectoriesEntity {
         this.parentDir = parentDir;
     }
 
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DirectoriesEntity that = (DirectoriesEntity) o;
-        return dirId == that.dirId && userId == that.userId && Objects.equals(dirName, that.dirName) && Objects.equals(parentDir, that.parentDir);
+        return dirId == that.dirId
+                && userId == that.userId
+                && Objects.equals(dirName, that.dirName)
+                && Objects.equals(parentDir, that.parentDir)
+                && Objects.equals(dateTime, that.dateTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dirId, userId, dirName, parentDir);
+        return Objects.hash(dirId, userId, dirName, parentDir, dateTime);
     }
 }

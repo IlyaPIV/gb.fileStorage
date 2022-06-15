@@ -17,7 +17,7 @@ import server.hibernate.DBConnector;
 @Slf4j
 public class NettyServer {
 
-    private FilesStorage filesStorageService;
+    private final FilesStorage filesStorageService;
 
     private DBConnector databaseConnector;
 

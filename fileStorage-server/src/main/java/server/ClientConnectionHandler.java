@@ -16,8 +16,8 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
 
     private final FilesStorage filesStorage;
     private final DBConnector dbConnector;
-    private Path usersHomeDirectory;
-    private Path currentDirectory;
+    private DirectoriesEntity usersHomeDirectory;
+    private DirectoriesEntity currentDirectory;
     private Path userServerDirectory;
     private int userID;
 
@@ -29,11 +29,11 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
     private void setUserSettings(String login) throws RuntimeException{
         DirectoriesEntity homeDir = DBConnector.getUserHomeDir(userID);
         log.debug("Ссылка на стартовую директорию: "+homeDir);
-        this.currentDirectory = filesStorage.getUsersStartPath(userID);
-        this.usersHomeDirectory = currentDirectory;
+        this.currentDirectory = homeDir;
+        this.usersHomeDirectory = homeDir;
         this.userServerDirectory = filesStorage.getUsersServerPath(login);
 
-        log.debug("Стартовая директория пользователя: "+userServerDirectory.toString());
+        log.debug("Каталог пользователя на сервере: "+userServerDirectory.toString());
     }
 
 
@@ -44,8 +44,11 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         if (inMessage instanceof FileDownloadRequest fdr) {
 
             try {
+                /**
+                 * требуется поменять получение пути файла
+                 */
                 FileTransferData fileData =
-                        new FileTransferData(filesStorage.getFileData(fdr.getFileName(), currentDirectory),
+                        new FileTransferData(filesStorage.getFileData(fdr.getFileName(), userServerDirectory),
                                                                                         fdr.getFileName());
                 chc.writeAndFlush(fileData);
                 log.debug("File was send to user");
@@ -61,7 +64,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             /*
             //доработать id юзера
             */
-            chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(userID, currentDirectory)));
+            chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
 
         } else if (inMessage instanceof FileTransferData fileData) {
 
@@ -72,9 +75,9 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             //доработать id юзера
             */
             try {
-                filesStorage.saveFile(fileData, userID, currentDirectory);
+                filesStorage.saveFile(fileData, userServerDirectory, currentDirectory);
 
-                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(userID, currentDirectory)));
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
             } catch (IOException e) {
                 log.error("Error with saving file on server!!!");
                 chc.writeAndFlush(new ErrorAnswerMessage("Error with saving file on server!!!"));
@@ -83,9 +86,9 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         } else if (inMessage instanceof StoragePathUpRequest) {
             log.debug("Server current path UP request. Refreshing server files list in new directory");
 
-            if (currentDirectory!=usersHomeDirectory) {
+            if (!currentDirectory.equals(usersHomeDirectory)) {
                 currentDirectory = filesStorage.currentDirectoryUP(currentDirectory);
-                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(userID, currentDirectory)));
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
             } else  {
                 chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory UP."));
             }
@@ -93,8 +96,8 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         } else if (inMessage instanceof StoragePathInRequest msg) {
             log.debug("Server current path IN request. Refreshing server files list in new directory");
             try {
-                currentDirectory = filesStorage.currentDirectoryIN(msg, currentDirectory);
-                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(userID, currentDirectory)));
+                currentDirectory = filesStorage.currentDirectoryIN(msg);
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
             } catch (RuntimeException e) {
                 log.error(e.getMessage());
                 chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory IN."));

@@ -15,6 +15,8 @@ public class ServerFile implements Serializable {
 
     private boolean isDir;
 
+    private int poz; //порядковый номер для сортировки
+
     public String getFileName() {
         return fileName;
     }
@@ -53,6 +55,14 @@ public class ServerFile implements Serializable {
 
     public void setDir(boolean dir) {
         isDir = dir;
+    }
+
+    public void setPoz(int poz) {
+        this.poz = poz;
+    }
+
+    public int getPoz() {
+        return poz;
     }
 
     @Override

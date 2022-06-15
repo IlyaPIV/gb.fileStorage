@@ -251,17 +251,17 @@ public class IOClientHandler {
         //по хорошему не мешала бы оптимизация на случай потери пакета при передаче
         FilesStorage serverFS = IOServer.getFilesStorage();
 
-        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0, Path.of(FilesStorage.DIRECTORY));
-
-        sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.GET_FILES_LIST,ConnectionCommands.OPER_START,serverFileList.size()));
-
-        for (ServerFile sf:
-                serverFileList) {
-            System.out.println(sf);
-
-            sendFileInfoToClient(sf);
-
-        }
+//        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0, Path.of(FilesStorage.DIRECTORY));
+//
+//        sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.GET_FILES_LIST,ConnectionCommands.OPER_START,serverFileList.size()));
+//
+//        for (ServerFile sf:
+//                serverFileList) {
+//            System.out.println(sf);
+//
+//            sendFileInfoToClient(sf);
+//
+//        }
 
         System.out.println("Список файлов отправлен");
     }

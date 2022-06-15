@@ -39,7 +39,6 @@ import java.util.ResourceBundle;
 @Slf4j
 public class ClientMainController implements Initializable {
 
-
     private Stage mainWindow;
     private AuthRegWindow logRegWindow;
     private NettyConnection nettyConnection;
@@ -63,6 +62,8 @@ public class ClientMainController implements Initializable {
     private TextField infoField;
     @FXML
     public Button btnTerminal; //old and not used
+    @FXML
+    public Button button_newDir;
     @FXML
     public Button button_share;
     @FXML
@@ -178,15 +179,16 @@ public class ClientMainController implements Initializable {
      */
     private void prepareServerTable(){
 
-        TableColumn<ServerFile,Boolean> isDirColumn = new TableColumn<>("is dir");
-        isDirColumn.setCellValueFactory(param ->
-                new SimpleBooleanProperty(param.getValue().isDir()));
-        isDirColumn.setVisible(false);
+        TableColumn<ServerFile,Integer> pozColumn = new TableColumn<>("position");
+        pozColumn.setCellValueFactory(param ->
+                new SimpleObjectProperty<>(param.getValue().getPoz()));
+        pozColumn.setVisible(false);
 
         TableColumn<ServerFile,String> fileNameColumn = new TableColumn<>("Name");
         fileNameColumn.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getFileName()));
         fileNameColumn.setPrefWidth(305);
+        fileNameColumn.setSortable(false);
 
 
         TableColumn<ServerFile, Long> fileSizeColumn = new TableColumn<>("Size");
@@ -209,16 +211,17 @@ public class ClientMainController implements Initializable {
                 }
             };
         });
+        fileSizeColumn.setSortable(false);
 
         TableColumn<ServerFile, String> fileDataColumn = new TableColumn<>("Date");
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         fileDataColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastUpdate().format(dtf)));
         fileDataColumn.setPrefWidth(120);
-
+        fileDataColumn.setSortable(false);
 
 
         serverFilesTable.getColumns().addAll(fileNameColumn, fileSizeColumn, fileDataColumn);
-        serverFilesTable.getSortOrder().add(fileNameColumn);
+        serverFilesTable.getSortOrder().add(pozColumn);
 
 
         serverFilesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -326,6 +329,7 @@ public class ClientMainController implements Initializable {
         button_share.setDisable(!isConnected);
         button_rename.setDisable(!isConnected);
         button_upload.setDisable(!isConnected);
+        button_newDir.setDisable(!isConnected);
         serverFilesTable.setDisable(!isConnected);
         button_connect.setStyle(isConnected ? "-fx-background-color: green" : "-fx-background-color: red");
     }
@@ -413,14 +417,12 @@ public class ClientMainController implements Initializable {
         if (!isConnected) {
             try {
                 createConnectionToServer();
-
                 openLogRegWindow();
-                log.debug("Opening auth/reg window");
 
+                log.debug("Opening auth/reg window");
             } catch (IOException e) {
                 log.error(e.getMessage());
             }
-
         } else {
             closeNettyConnection();
             this.isConnected = false;
