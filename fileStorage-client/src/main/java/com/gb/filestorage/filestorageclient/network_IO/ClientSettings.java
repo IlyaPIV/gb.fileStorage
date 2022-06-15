@@ -1,4 +1,4 @@
-package com.gb.filestorage.filestorageclient.network;
+package com.gb.filestorage.filestorageclient.network_IO;
 
 import java.io.*;
 import java.net.Socket;
