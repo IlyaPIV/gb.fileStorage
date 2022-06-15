@@ -1,19 +1,23 @@
-package server;
+package server.old;
 
 import constants.ConnectionCommands;
+import server.FilesStorage;
+import server.ServerSettings;
+import server.old.IOServer;
 import serverFiles.ServerFile;
 
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class ClientHandler {
+public class IOClientHandler {
 
-    private Server server;
+    private server.old.IOServer IOServer;
     private Socket socket;
     private DataInputStream ins;
     private DataOutputStream ous;
@@ -27,13 +31,13 @@ public class ClientHandler {
     private String login;
     private Logger serverLogger;
 
-    public ClientHandler(Server server, Socket socket){
+    public IOClientHandler(IOServer IOServer, Socket socket){
 
         try {
 
-            handlerSettings(server, socket);
+            handlerSettings(IOServer, socket);
 
-            server.getServerSettings().getExecutorService().execute( ()-> {
+            IOServer.getServerSettings().getExecutorService().execute( ()-> {
 
                 try {
                     tryToConnectUser();
@@ -56,10 +60,10 @@ public class ClientHandler {
     /**
      * заполняет базовые настройки сервера
     * */
-    private void handlerSettings(Server server, Socket socket) throws IOException{
-        this.server = server;
+    private void handlerSettings(IOServer IOServer, Socket socket) throws IOException{
+        this.IOServer = IOServer;
         this.socket = socket;
-        this.serverLogger = ServerSettings.LOGGER;
+   //     this.serverLogger = ServerSettings.LOGGER;
         this.ins = new DataInputStream(socket.getInputStream());
         this.ous = new DataOutputStream(socket.getOutputStream());
         this.objous = new ObjectOutputStream(socket.getOutputStream());
@@ -73,20 +77,10 @@ public class ClientHandler {
      */
     private void disconnectClient(){
 
-        server.disconnectUser(this);
+        IOServer.disconnectUser(this);
         //serverLogger.log(Level.INFO,"Client "+login+" disconnected");
 
         try {
-
-            /**
-             * не знаю надо ли потоки закрывать отдельно или достаточно закрыть сокет
-             */
-
-//            ins.close();
-//            ous.close();
-//            objous.close();
-//            fdins.close();
-//            fwr.close();
 
             socket.close();
 
@@ -110,11 +104,6 @@ public class ClientHandler {
             while (true) {
                 String msg = ins.readUTF();
 
-                /**
-                 * temp
-                 */
-                System.out.println("auth msg:" + msg);
-                /**fggfh**/
 
                 if (msg.equals(ConnectionCommands.END)) {
                     sendMsgToClient(ConnectionCommands.END);
@@ -143,7 +132,7 @@ public class ClientHandler {
                     //авторизация пользователя
                     this.login = tokens[1];
                     this.authenticated = true;
-                    server.connectUser(this);
+                    IOServer.connectUser(this);
 
                     String result = ConnectionCommands.OPER_OK;
                     String message = "Connection is created";
@@ -172,11 +161,6 @@ public class ClientHandler {
         while (authenticated) {
             String msg = ins.readUTF();
 
-            /**
-             * temp
-             */
-            System.out.println("work msg:" + msg);
-            /**fggfh**/
 
             if (msg.equals(ConnectionCommands.END)) {
                 sendMsgToClient(ConnectionCommands.END);
@@ -265,9 +249,9 @@ public class ClientHandler {
      */
     private void sendUsersListOfFilesToClient() {
         //по хорошему не мешала бы оптимизация на случай потери пакета при передаче
-        FilesStorage serverFS = server.getFilesStorage();
+        FilesStorage serverFS = IOServer.getFilesStorage();
 
-        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0);
+        List<ServerFile> serverFileList = serverFS.getFilesOnServer(0, Path.of(FilesStorage.DIRECTORY));
 
         sendMsgToClient(String.format("%s~%s~%d", ConnectionCommands.GET_FILES_LIST,ConnectionCommands.OPER_START,serverFileList.size()));
 
@@ -284,7 +268,7 @@ public class ClientHandler {
 
     /**
      * отправляет информацию о файле на клиента
-     * @param sf
+     * @param sf -
      */
     private void sendFileInfoToClient(ServerFile sf) {
 

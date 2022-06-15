@@ -5,15 +5,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.io.File;
+
 import java.io.IOException;
 
-public class ClienMainApplication extends Application {
+public class ClientMainApplication extends Application {
 
 
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(ClienMainApplication.class.getResource("clientMain-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientMainApplication.class.getResource("clientMain-view.fxml"));
 
 
         Scene scene = new Scene(fxmlLoader.load(), 1200, 780);
@@ -22,6 +22,7 @@ public class ClienMainApplication extends Application {
         stage.setScene(scene);
 
         stage.show();
+
     }
 
     public static void main(String[] args) {

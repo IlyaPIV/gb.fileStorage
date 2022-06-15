@@ -4,3 +4,4 @@
 /shelf/
 /workspace.xml
 ../fileStorage-server/server_storage/
+*.class

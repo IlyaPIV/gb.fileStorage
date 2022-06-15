@@ -1,4 +1,7 @@
-package server;
+package server.old;
+
+import server.FilesStorage;
+import server.ServerSettings;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -8,16 +11,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
 
-public class Server {
+public class IOServer {
 
     private ServerSettings serverSettings;
     private Socket clientSocket;
 
     private FilesStorage filesStorage;
 
-    private List<ClientHandler> clients;
+    private List<IOClientHandler> clients;
 
-    public Server(){
+    public IOServer(){
 
         try {
             startServer();
@@ -39,7 +42,8 @@ public class Server {
      * @throws IOException
      */
     private void startServer() throws IOException {
-        this.serverSettings = new ServerSettings(this);
+
+        this.serverSettings = new ServerSettings();
         this.serverSettings.setServerSocket(new ServerSocket(ServerSettings.SERVER_PORT));
         this.serverSettings.setExecutorService(Executors.newCachedThreadPool());
 
@@ -58,7 +62,7 @@ public class Server {
     private void stopServer(){
 
         //под вопросом итератор
-        for (ClientHandler ch:
+        for (IOClientHandler ch:
              clients) {
             ch.disconnectFromServer();
         }
@@ -85,7 +89,7 @@ public class Server {
      */
     private void clientConnection() throws IOException{
         clientSocket = serverSettings.getServerSocket().accept();
-        new ClientHandler(this, clientSocket);
+        new IOClientHandler(this, clientSocket);
     }
 
     /**
@@ -108,7 +112,7 @@ public class Server {
      * добавление пользовательского соединения к серверу
      * @param ch
      */
-    public void connectUser(ClientHandler ch){
+    public void connectUser(IOClientHandler ch){
         System.out.println("New connection is activated.");
         clients.add(ch);
     }
@@ -117,7 +121,7 @@ public class Server {
      * закрытие пользовательского соединения и удаление его из списка подключений
      * @param ch
      */
-    public void disconnectUser(ClientHandler ch){
+    public void disconnectUser(IOClientHandler ch){
         clients.remove(ch);
     }
 }

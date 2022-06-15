@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+                 version="3.0">
+
+    <entity class="server.hibernate.entity.DirectoriesEntity">
+        <table name="directories" schema="public" catalog="de9oban5pa49j0"/>
+        <attributes>
+            <id name="dirId">
+                <column name="dir_id"/>
+            </id>
+            <basic name="userId">
+                <column name="user_id"/>
+            </basic>
+            <basic name="dirName">
+                <column name="dir_name"/>
+            </basic>
+            <basic name="parentDir">
+                <column name="parent_dir"/>
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>
