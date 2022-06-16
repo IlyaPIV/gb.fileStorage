@@ -137,7 +137,7 @@
                   </columns>
                </TableView>
                <HBox alignment="CENTER" maxHeight="35.0" minHeight="35.0" prefHeight="35.0">
-                  <Button fx:id="button_newDir" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="New DIR" textAlignment="CENTER" HBox.hgrow="ALWAYS">
+                  <Button fx:id="button_newDir" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="New DIR" textAlignment="CENTER" HBox.hgrow="ALWAYS" onAction="#cmdAddDir">
                      <HBox.margin>
                         <Insets left="15.0" right="15.0" />
                      </HBox.margin>
@@ -197,7 +197,7 @@
          </StackPane>
          <HBox maxHeight="25.0" minHeight="25.0" prefHeight="25.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
             <TextField fx:id="infoField" alignment="CENTER" editable="false" focusTraversable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO" HBox.hgrow="ALWAYS" />
-            <Button fx:id="btnTerminal" visible="false" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />
+<!--            <Button fx:id="btnTerminal" visible="false" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />-->
          </HBox>
       </VBox>
    </HBox>

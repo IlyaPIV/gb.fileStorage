@@ -48,8 +48,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                  * требуется поменять получение пути файла
                  */
                 FileTransferData fileData =
-                        new FileTransferData(filesStorage.getFileData(fdr.getFileName(), userServerDirectory),
-                                                                                        fdr.getFileName());
+                        new FileTransferData(filesStorage.getFileData(fdr.getFileID()), fdr.getFileName());
                 chc.writeAndFlush(fileData);
                 log.debug("File was send to user");
             } catch (RuntimeException e) {
@@ -89,6 +88,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             if (!currentDirectory.equals(usersHomeDirectory)) {
                 currentDirectory = filesStorage.currentDirectoryUP(currentDirectory);
                 chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                log.debug("Server files list was sent.");
             } else  {
                 chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory UP."));
             }
@@ -113,6 +113,17 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 chc.writeAndFlush(tryToAuthUser(request));
                 log.debug("Answer was send to: " + chc.channel().toString());
             }
+        } else if (inMessage instanceof NewDirRequest request) {
+            log.debug("Attempt to create new virtual folder in current");
+            if (filesStorage.createNewVirtualDir(request.getFolderName(), currentDirectory)) {
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                log.debug("New server files list was sent.");
+                chc.writeAndFlush(new DatabaseOperationResult(true, "New DIR was created on server"));
+            } else {
+                chc.writeAndFlush(new DatabaseOperationResult(false,"Failed to create new DIR record in DB"));
+            }
+        } else {
+            log.error("Unknown incoming message format!!!");
         }
 
 

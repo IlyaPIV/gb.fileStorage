@@ -19,6 +19,7 @@ public class DBConnector implements AuthService {
 
     }
 
+
     /*
     * ============================ AUTH SERVICE =========================
      */
@@ -132,7 +133,39 @@ public class DBConnector implements AuthService {
 
     public static void saveNewFile(String name, DirectoriesEntity dbDirectory) throws ServerCloudException {
         int idFile = HibernateRequests.createRealFileInfo(name, dbDirectory.getDirId());
-        HibernateRequests.createLinkToFile(name, idFile, dbDirectory.getDirId());
+        try {
+            HibernateRequests.createLinkToFile(name, idFile, dbDirectory.getDirId());
+        } catch (ServerCloudException e) {
+            //удалить запись в БД с файлом
+            HibernateRequests.deleteRealFileInfo(idFile);
+            throw e;
+        }
+
     }
+
+
+    /**
+     * возвращает строковый путь к файлу (каталог + настоящее имя файла)
+     * @param fileID - айди файла в БД
+     * @return String - строка с нормализованным путём к файлу
+     * @throws ServerCloudException - ошибка при работе с БД
+     */
+    public static String getServerPathToFile(long fileID) throws ServerCloudException{
+
+        RealFilesEntity file = HibernateRequests.getFileByID((int) fileID);
+        if (file != null) {
+            return Path.of(HibernateRequests.getDirectoryByID(file.getDirectoryId()).getDirName())
+                                                    .resolve(file.getName())
+                                                    .normalize().toString();
+        } else {
+            throw new ServerCloudException("Не удалось найти данные о файле с id = " + fileID + " в БД!");
+        }
+    }
+
+    // делает запись в БД о новой вложенной папке в текущем каталоге пользователя
+    public static void createNewDir(String folderName, int dirId, int userId) throws ServerCloudException{
+        HibernateRequests.createNewDirectory(folderName, dirId, userId);
+    }
+
 
 }

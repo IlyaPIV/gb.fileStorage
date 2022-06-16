@@ -34,6 +34,13 @@ public class DirectoriesEntity {
         this.dateTime = LocalDateTime.now();
     }
 
+    public DirectoriesEntity(String dirName, Integer parentDir, int userId) {
+        this.userId = userId;
+        this.dirName = dirName;
+        this.parentDir = parentDir;
+        this.dateTime = LocalDateTime.now();
+    }
+
     public int getDirId() {
         return dirId;
     }

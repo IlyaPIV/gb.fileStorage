@@ -264,4 +264,28 @@ public class HibernateRequests {
     }
 
 
+    /**
+     * удаляет запись в БД с указанным id
+     * @param idFile - айди записи в таблице файлов
+     */
+    public static void deleteRealFileInfo(int idFile) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()){
+            session.beginTransaction();
+            RealFilesEntity file = session.find(RealFilesEntity.class, idFile);
+            if (file != null) session.remove(file);
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось удалить запись с ID = " + idFile);
+        }
+    }
+
+    public static void createNewDirectory(String folderName, int dirId, int userId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            session.persist(new DirectoriesEntity(folderName, dirId, userId));
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось создать новую запись в таблицу каталогов");
+        }
+    }
 }

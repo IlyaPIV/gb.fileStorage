@@ -5,7 +5,6 @@ import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
 import com.gb.filestorage.filestorageclient.network_Netty.NettyConnection;
 import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
@@ -34,6 +33,7 @@ import java.net.URL;
 import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 @Slf4j
@@ -92,7 +92,8 @@ public class ClientMainController implements Initializable {
 
         prepareClientTable();
         prepareDisksBox();
-        updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+//        updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+        updateClientList(Paths.get(System.getProperty("user.home")));
         prepareServerTable();
 
         Platform.runLater(()->{
@@ -341,6 +342,17 @@ public class ClientMainController implements Initializable {
     public void setInfoText(String text){
         infoField.clear();
         infoField.setText(text.toUpperCase());
+        infoField.setStyle("-fx-background-color: lightgray");
+    }
+
+    /**
+     * выводит текст серверного сообщения в инфо поле
+     * @param text текст сообщения
+     */
+    public void setInfoText(String text, boolean fail){
+        infoField.clear();
+        infoField.setText(text.toUpperCase());
+        infoField.setStyle(fail ? "-fx-background-color: pink" : "-fx-background-color: lightgreen");
     }
 
     /**
@@ -383,6 +395,22 @@ public class ClientMainController implements Initializable {
         }
     }
 
+    /**
+     * обработчик нажатия кнопки "Добавить папку"
+     * @param actionEvent - событие нажатия на кнопку
+     */
+    @FXML
+    public void cmdAddDir(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog("new directory name");
+
+        dialog.setTitle("Fill the field");
+        dialog.setHeaderText("Enter new folder name:");
+        dialog.setContentText("DIR name:");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(this::tryToCreateNewFolderOnServer);
+    }
 
     /*
      *
@@ -546,6 +574,40 @@ public class ClientMainController implements Initializable {
         logRegWindow.getAnswerFromServer(answer);
     }
 
+
+    /**
+     * попытка создать новую папку в текущей директории на сервере
+     * @param newName - имя новой папки
+     */
+    public void tryToCreateNewFolderOnServer(String newName) {
+        if (checkServersTableForDuplicateDirName(newName)) {
+            setInfoText("New DIR was created!", false);
+            try {
+                nettyConnection.createNewDir(newName);
+            } catch (IOException e) {
+                setInfoText(e.getMessage(), true);
+                log.error("Ошибка отправки запроса на сервер для создания нового каталога");
+            }
+        } else setInfoText("This name is already used!", true);
+    }
+
+    /**
+     * проверяет текущую директорию на серверной стороне на наличие дубликата по имени папки
+     * @param newName - имя новой папки
+     * @return - true если имя доступно
+     * false если папка с таким именем уже существует
+     */
+    private boolean checkServersTableForDuplicateDirName(String newName) {
+
+        for (ServerFile sf:
+             serverFilesTable.getItems()) {
+
+            if (sf.getFileName().equals(newName) && sf.isDir()) return false;
+        }
+
+        return true;
+    }
+
     /*
     * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================
     *
@@ -653,5 +715,6 @@ public class ClientMainController implements Initializable {
 
         connection.tryToAuthOnServer();
     }
+
 
 }

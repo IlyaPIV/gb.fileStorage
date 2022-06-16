@@ -7,17 +7,13 @@ import messages.StoragePathInRequest;
 import server.hibernate.DBConnector;
 import server.hibernate.entity.DirectoriesEntity;
 import server.hibernate.entity.LinksEntity;
-import server.hibernate.entity.UsersEntity;
 import serverFiles.ServerFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Data @Slf4j
@@ -29,26 +25,26 @@ public class FilesStorage {
 
     }
 
-    /**
-     * подготавливает информацию о файле в API формате
-     * @param path - путь к файлу
-     * @param id - айди файла
-     * @return ServerFile - инфо о файле в стандартизированном формате
-     */
-    private ServerFile prepareFileInfo(Path path, long id) {
-        ServerFile sf = new ServerFile();
-        sf.setFileName(path.getFileName().toString());
-        sf.setServerID(id);
-        sf.setDir(Files.isDirectory(path));
-        try {
-            sf.setSize(sf.isDir() ? -1L : Files.size(path));
-            sf.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(0)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return sf;
-    }
+//    /**
+//     * подготавливает информацию о файле в API формате
+//     * @param path - путь к файлу
+//     * @param id - айди файла
+//     * @return ServerFile - инфо о файле в стандартизированном формате
+//     */
+//    private ServerFile prepareFileInfo(Path path, long id) {
+//        ServerFile sf = new ServerFile();
+//        sf.setFileName(path.getFileName().toString());
+//        sf.setServerID(id);
+//        sf.setDir(Files.isDirectory(path));
+//        try {
+//            sf.setSize(sf.isDir() ? -1L : Files.size(path));
+//            sf.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(0)));
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        return sf;
+//    }
 
 
     /**
@@ -57,8 +53,6 @@ public class FilesStorage {
     private List<ServerFile> prepareServerFiles(DirectoriesEntity currentDirectory, DirectoriesEntity homeDir){
 
         List<ServerFile> serverFiles = new ArrayList<>();
-
-        long id = 1;
 
         if (!currentDirectory.equals(homeDir)) {
             serverFiles.add(prepareParentDirFile(currentDirectory));
@@ -69,7 +63,6 @@ public class FilesStorage {
         log.debug("Подготовили список папок внутри текущего каталога");
 
         serverFiles.addAll(prepareFilesInside(currentDirectory, serverFiles.size()));
-
 
         return serverFiles;
     }
@@ -92,6 +85,7 @@ public class FilesStorage {
                 newFile.setDir(false);
                 newFile.setServerID(link.getFileId());
                 newFile.setSize(DBConnector.getFileSize(link.getFileId()));
+                newFile.setLinkID(link.getLinkId());
                 list.add(newFile);
                 currentSize++;
             }
@@ -116,6 +110,8 @@ public class FilesStorage {
                 newDir.setDir(true);
                 newDir.setServerID(dir.getDirId());
                 newDir.setSize(-1L);
+                newDir.setLinkID(0);
+
                 list.add(newDir);
                 counter++;
             }
@@ -133,6 +129,7 @@ public class FilesStorage {
         parent.setPoz(0);
         parent.setServerID(currentDirectory.getDirId());
         parent.setLastUpdate(currentDirectory.getDateTime());
+        parent.setLinkID(0);
 
         return parent;
     }
@@ -146,25 +143,24 @@ public class FilesStorage {
         return prepareServerFiles(currentDirectory, homeDirectory);
     }
 
-
     /**
      * функция возвращает содержимое выбранного на клиенте файла из данных сервера
-     * @param fileName - имя файла в интерфейсе пользователя на стороне клиента
+     * @param fileID - id файла в таблице реальных файлов БД
      * @return byte[] - массив байтов содержимого файла
-     * @throws RuntimeException - в случае если выбран файл или не удалось найти физический файл на сервере
+     * @throws ServerCloudException - в случае если выбран файл или не удалось найти физический файл на сервере
      * @throws IOException - ошибка считывания данных файла
      */
-    public byte[] getFileData(String fileName, Path currentDirectory) throws RuntimeException, IOException {
+    public byte[] getFileData(long fileID) throws ServerCloudException, IOException {
 
         //в будущем заменится на фактический путь к файлу из SQL
-        Path pathToFile = currentDirectory.resolve(fileName);
+        Path pathToFile = Path.of(DIRECTORY).resolve(DBConnector.getServerPathToFile(fileID)).normalize();
 
         //проверки
         if (!Files.exists(pathToFile)){
-            throw new RuntimeException("Указанный файл не найден на сервере!");
+            throw new ServerCloudException("Указанный файл не найден на сервере!");
         }
         if (Files.isDirectory(pathToFile)) {
-            throw new RuntimeException("Выбранный файл является директорией!");
+            throw new ServerCloudException("Выбранный файл является директорией!");
         }
 
         //получение данных
@@ -224,5 +220,22 @@ public class FilesStorage {
 
         log.debug("User's home DIR on server is: "+dirPath.toAbsolutePath());
         return dirPath;
+    }
+
+    /**
+     * создаёт в БД запись о новом каталоге
+     * @param folderName - имя новой директории
+     * @param currentDirectory - ссылка на текущий каталог пользователя
+     * @return true - если всё прошло успешно
+     * false - если сделать запись не удалось
+     */
+    public boolean createNewVirtualDir(String folderName, DirectoriesEntity currentDirectory) {
+        try {
+            DBConnector.createNewDir(folderName, currentDirectory.getDirId(), currentDirectory.getUserId());
+            return true;
+        } catch (ServerCloudException e) {
+            log.error("Failed to create new DIR record in DB");
+            return false;
+        }
     }
 }
