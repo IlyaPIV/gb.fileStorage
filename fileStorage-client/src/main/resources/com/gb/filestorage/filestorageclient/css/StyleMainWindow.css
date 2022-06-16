@@ -64,6 +64,17 @@
     -fx-background-padding-right: 2;
 }
 
+#button_newDir {
+    -fx-background-image: url("../png/png_new_folder.png");
+    -fx-background-size: 25 25;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: left;
+    -fx-background-padding-left: 2;
+    -fx-background-padding-top: 2;
+    -fx-background-padding-down: 2;
+    -fx-background-padding-right: 2;
+}
+
 #terminalDisplay {
     -fx-background-color: black;
     -fx-text-fill: white;

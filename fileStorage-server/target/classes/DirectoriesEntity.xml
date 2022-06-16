@@ -17,6 +17,9 @@
             <basic name="parentDir">
                 <column name="parent_dir"/>
             </basic>
+            <basic name="dateTime">
+                <column name="created"/>
+            </basic>
         </attributes>
     </entity>
 </entity-mappings>

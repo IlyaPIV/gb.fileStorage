@@ -137,6 +137,17 @@
                   </columns>
                </TableView>
                <HBox alignment="CENTER" maxHeight="35.0" minHeight="35.0" prefHeight="35.0">
+                  <Button fx:id="button_newDir" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="New DIR" textAlignment="CENTER" HBox.hgrow="ALWAYS" onAction="#cmdAddDir">
+                     <HBox.margin>
+                        <Insets left="15.0" right="15.0" />
+                     </HBox.margin>
+                     <padding>
+                        <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
+                     </padding>
+                     <font>
+                        <Font size="12.0" />
+                     </font>
+                  </Button>
                   <Button fx:id="button_share" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Share" textAlignment="CENTER" HBox.hgrow="ALWAYS">
                      <HBox.margin>
                         <Insets left="15.0" right="15.0" />
@@ -145,7 +156,7 @@
                         <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
-                        <Font size="14.0" />
+                        <Font size="12.0" />
                      </font>
                   </Button>
                   <Button fx:id="button_addLink" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Add link" textAlignment="CENTER" HBox.hgrow="ALWAYS">
@@ -156,7 +167,7 @@
                         <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
-                        <Font size="14.0" />
+                        <Font size="12.0" />
                      </font>
                   </Button>
                   <Button fx:id="button_rename" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Rename" textAlignment="CENTER" HBox.hgrow="ALWAYS">
@@ -167,7 +178,7 @@
                         <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
                      </padding>
                      <font>
-                        <Font size="14.0" />
+                        <Font size="12.0" />
                      </font>
                   </Button>
                   <Button fx:id="button_delete" alignment="CENTER" focusTraversable="false" maxWidth="100.0" mnemonicParsing="false" prefHeight="29.0" text="Delete" textAlignment="CENTER" HBox.hgrow="ALWAYS">
@@ -175,7 +186,7 @@
                         <Insets left="15.0" right="15.0" />
                      </HBox.margin>
                      <font>
-                        <Font size="14.0" />
+                        <Font size="12.0" />
                      </font>
                      <padding>
                         <Insets bottom="2.0" left="22.0" right="2.0" top="2.0" />
@@ -186,7 +197,7 @@
          </StackPane>
          <HBox maxHeight="25.0" minHeight="25.0" prefHeight="25.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
             <TextField fx:id="infoField" alignment="CENTER" editable="false" focusTraversable="false" maxHeight="25.0" minHeight="25.0" promptText="TEXT FIELD FOR SYSTEM INFO" HBox.hgrow="ALWAYS" />
-            <Button fx:id="btnTerminal" visible="false" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />
+<!--            <Button fx:id="btnTerminal" visible="false" mnemonicParsing="false" onAction="#cmdTerminal" text="&gt;.." />-->
          </HBox>
       </VBox>
    </HBox>

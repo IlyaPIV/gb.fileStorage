@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import messages.*;
 import serverFiles.ServerFile;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -66,6 +65,8 @@ public class NettyConnection {
                             clientUI.updateClientList(Path.of(clientUI.getCurrentPath()));
                         } else if (inMsg instanceof AuthRegAnswer answer) {
                             clientUI.GetAuthRegAnswer(answer);
+                        } else if (inMsg instanceof DatabaseOperationResult result) {
+                            clientUI.setInfoText(result.getMessage(), !result.isResult());
                         }
                     } catch (IOException e) {
                         log.error("Error with reading input channel");
@@ -94,10 +95,10 @@ public class NettyConnection {
             try {
                 Files.write(newFilePath, inMsg.getData());
                 log.debug("Файл сохранён на диске");
-                clientUI.setInfoText("File was saved in current directory!");
+                clientUI.setInfoText("File was saved in current directory!", false);
             } catch (IOException e) {
                 log.error("Ошибка сохранения файла на диске");
-                clientUI.setInfoText("Failed to save downloaded file");
+                clientUI.setInfoText("Failed to save downloaded file",true);
             }
         }
 
@@ -175,6 +176,7 @@ public class NettyConnection {
         if (sf.getFileName().equals(ServerFile.HOME_DIR_NAME)) {
             try {
                 write(new StoragePathUpRequest());
+                clientUI.setInfoText("path up request");
             } catch (IOException e) {
                 log.error("ошибка отправки сообщения Path UP");
                 throw new IOException("Failed to send Path UP request");
@@ -182,6 +184,7 @@ public class NettyConnection {
         } else {
             try {
                 write(new StoragePathInRequest(sf.getFileName(), sf.getServerID()));
+                clientUI.setInfoText("path in request to: "+sf.getFileName());
             } catch (IOException e) {
                 log.error("Ошибка отправки сообщения Path IN");
                 throw new IOException("Failed to send Path IN request");
@@ -196,5 +199,13 @@ public class NettyConnection {
      */
     public void sendAuthRegRequest(AuthRegRequest request) throws IOException {
         write(request);
+    }
+
+    /**
+     * отправляет запрос на сервер
+     * @param newName - имя каталога на сервере
+     */
+    public void createNewDir(String newName) throws IOException{
+        write(new NewDirRequest(newName));
     }
 }

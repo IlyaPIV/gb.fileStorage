@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "realFiles", schema = "public", catalog = "de9oban5pa49j0")
+@Table(name = "realfiles", schema = "public", catalog = "de9oban5pa49j0")
 public class RealFilesEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -17,6 +17,14 @@ public class RealFilesEntity {
     @Basic
     @Column(name = "name")
     private String name;
+
+    public RealFilesEntity() {
+    }
+
+    public RealFilesEntity(String name, int directoryId) {
+        this.directoryId = directoryId;
+        this.name = name;
+    }
 
     public int getFileId() {
         return fileId;
