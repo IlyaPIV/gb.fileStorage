@@ -1,7 +1,10 @@
 package server.hibernate;
 
 import org.hibernate.Session;
+import server.ServerCloudException;
 import server.hibernate.entity.DirectoriesEntity;
+import server.hibernate.entity.LinksEntity;
+import server.hibernate.entity.RealFilesEntity;
 import server.hibernate.entity.UsersEntity;
 import java.util.List;
 
@@ -57,7 +60,7 @@ public class HibernateRequests {
      * MIN_VALUE - если запись с такими данными не найдена
      * @throws RuntimeException - если не удалось выполнить запрос
      */
-    public static int getUserID(String login, String password) throws RuntimeException {
+    public static int getUserID(String login, String password) {
         try (Session session = HibernateUtil.getSession()){
             session.beginTransaction();
             List<UsersEntity> users = session.createQuery(queryUsersFindByLoginAndPass(), UsersEntity.class)
@@ -98,13 +101,13 @@ public class HibernateRequests {
      * @param userID - id пользователя
      * @param login - имя пользователя - используется для имени стартовой директории
      */
-    public static void createUserHomeDir(int userID, String login) {
+    public static void createUserHomeDir(int userID, String login) throws ServerCloudException {
         try (Session session = HibernateUtil.getSession()) {
             session.beginTransaction();
             session.persist(new DirectoriesEntity(userID, login));
             session.getTransaction().commit();
         } catch (Exception e) {
-            throw new RuntimeException("Не удалось выполнить запрос к БД!");
+            throw new ServerCloudException("Не удалось выполнить запрос к БД!");
         }
     }
 
@@ -114,7 +117,7 @@ public class HibernateRequests {
      * @return - ссылка на запись БД
      * @throws RuntimeException - в случае если кол-во записей в результате запроса не равно 1
      */
-    public static DirectoriesEntity getUserHomeDir(int userID) throws RuntimeException {
+    public static DirectoriesEntity getUserHomeDir(int userID) {
         try (Session session = HibernateUtil.getSession()){
             session.beginTransaction();
             List<DirectoriesEntity> list = session.createQuery(queryDirectoriesFindByUser(), DirectoriesEntity.class)
@@ -132,5 +135,157 @@ public class HibernateRequests {
      */
     private static String queryDirectoriesFindByUser() {
         return "FROM DirectoriesEntity WHERE userId = :userID and parentDir = null";
+    }
+
+    /**
+     * возвращает ссылку на родительский каталог директории
+     * @param dirId - айди текущего каталога
+     * @return ссылка на директорию
+     */
+    public static DirectoriesEntity getDirectoryByID(int dirId){
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            DirectoriesEntity parent = session.get(DirectoriesEntity.class, dirId);
+            session.getTransaction().commit();
+            return parent;
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось получить данные от сервера");
+        }
+    }
+
+    public static List<DirectoriesEntity> getListChildDirs(DirectoriesEntity currentDirectory) {
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            List<DirectoriesEntity> list = session.createQuery(queryDirectoriesChildren(), DirectoriesEntity.class)
+                            .setParameter("paramParentID", currentDirectory.getDirId())
+                                    .list();
+            session.getTransaction().commit();
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось получить из БД список директорий в каталоге");
+        }
+
+    }
+
+    /**
+     * возвращает текст запроса для отбора директорий по ID родительского каталога
+     * @return String - с текстом запроса
+     */
+    private static String queryDirectoriesChildren() {
+        return "FROM DirectoriesEntity WHERE parentDir = :paramParentID";
+    }
+
+
+    /*
+     * ================   LINKS  ================
+     */
+
+    /**
+     * делает новую запись в таблице ссылок на файлы
+     * @param name - имя ссылки
+     * @param idFile - id ключ файла в таблице БД
+     * @param dirId - id ключ директории в таблице БД
+     * @throws ServerCloudException - ошибка при записи файла
+     */
+    public static void createLinkToFile(String name, int idFile, int dirId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            session.persist(new LinksEntity(name, idFile, dirId));
+            session.getTransaction().commit();
+        }  catch (Exception e) {
+            throw new ServerCloudException("Не удалось добавить ссылку на файл в БД!");
+        }
+    }
+
+    /**
+     * функция получения списка ссылок на файлы в текущей директории
+     * @param currentDirectory - ссылка на директорию в таблице БД
+     * @return - List с ссылками на файлы
+     */
+    public static List<LinksEntity> getListChildLinks(DirectoriesEntity currentDirectory) {
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            List<LinksEntity> list = session.createQuery(queryLinksFindByDir(), LinksEntity.class)
+                            .setParameter("userDir", currentDirectory.getDirId())
+                                    .list();
+            session.getTransaction().commit();
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось получить от БД список ссылок в каталоге");
+        }
+    }
+
+    /**
+     * возвращает текст запроса для отбора ссылок по ID каталога
+     * @return String - с текстом запроса
+     */
+    private static String queryLinksFindByDir() {
+        return "FROM LinksEntity WHERE usersDirectory = :userDir";
+    }
+
+
+
+    /*
+     * ================   FILES  ================
+     */
+
+    /**
+     * возвращает ссылку на файл по его ID
+     * @param fileId - ID файла в БД
+     * @return ссылка на файл
+     */
+    public static RealFilesEntity getFileByID(int fileId){
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            RealFilesEntity file = session.get(RealFilesEntity.class, fileId);
+            session.getTransaction().commit();
+            return file;
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось получить ссылку на файл от БД.");
+        }
+    }
+
+    /**
+     * сохраняет в таблице реальных файлов информацию о месте в виртуальном дереве каталогов пользователя
+     * @param name - физическое имя файла
+     * @param dirId - id ключ директории
+     * @throws ServerCloudException - ошибка сохранения
+     */
+    public static int createRealFileInfo(String name, int dirId) throws ServerCloudException {
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            RealFilesEntity newFile = new RealFilesEntity(name, dirId);
+            session.persist(newFile);
+            session.getTransaction().commit();
+            return newFile.getFileId();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось сделать запись о файле в БД!");
+        }
+    }
+
+
+    /**
+     * удаляет запись в БД с указанным id
+     * @param idFile - айди записи в таблице файлов
+     */
+    public static void deleteRealFileInfo(int idFile) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()){
+            session.beginTransaction();
+            RealFilesEntity file = session.find(RealFilesEntity.class, idFile);
+            if (file != null) session.remove(file);
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось удалить запись с ID = " + idFile);
+        }
+    }
+
+    public static void createNewDirectory(String folderName, int dirId, int userId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            session.persist(new DirectoriesEntity(folderName, dirId, userId));
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось создать новую запись в таблицу каталогов");
+        }
     }
 }

@@ -4,14 +4,15 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import messages.FileTransferData;
 import messages.StoragePathInRequest;
+import server.hibernate.DBConnector;
+import server.hibernate.entity.DirectoriesEntity;
+import server.hibernate.entity.LinksEntity;
 import serverFiles.ServerFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,97 +25,142 @@ public class FilesStorage {
 
     }
 
-    /**
-     * подготавливает информацию о файле в API формате
-     * @param path - путь к файлу
-     * @param id - айди файла
-     * @return ServerFile - инфо о файле в стандартизированном формате
-     */
-    private ServerFile prepareFileInfo(Path path, long id) {
-        ServerFile sf = new ServerFile();
-        sf.setFileName(path.getFileName().toString());
-        sf.setServerID(id);
-        sf.setDir(Files.isDirectory(path));
-        try {
-            sf.setSize(sf.isDir() ? -1L : Files.size(path));
-            sf.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(0)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return sf;
-    }
+//    /**
+//     * подготавливает информацию о файле в API формате
+//     * @param path - путь к файлу
+//     * @param id - айди файла
+//     * @return ServerFile - инфо о файле в стандартизированном формате
+//     */
+//    private ServerFile prepareFileInfo(Path path, long id) {
+//        ServerFile sf = new ServerFile();
+//        sf.setFileName(path.getFileName().toString());
+//        sf.setServerID(id);
+//        sf.setDir(Files.isDirectory(path));
+//        try {
+//            sf.setSize(sf.isDir() ? -1L : Files.size(path));
+//            sf.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(0)));
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//        return sf;
+//    }
 
 
     /**
     * подготавливает список файлов пользователя на стороне сервере
      */
-    private List<ServerFile> prepareServerFiles(int userID, Path currentDirectory){
+    private List<ServerFile> prepareServerFiles(DirectoriesEntity currentDirectory, DirectoriesEntity homeDir){
 
         List<ServerFile> serverFiles = new ArrayList<>();
 
-        long id = 1;
-
-        if (!currentDirectory.equals(getUsersStartPath(userID))) {
+        if (!currentDirectory.equals(homeDir)) {
             serverFiles.add(prepareParentDirFile(currentDirectory));
+            log.debug("Подготовили элемент-каталог для перехода вверх");
         }
 
-        File folder = new File(currentDirectory.toString());
-        File[] files = folder.listFiles();
+        serverFiles.addAll(prepareFoldersInside(currentDirectory));
+        log.debug("Подготовили список папок внутри текущего каталога");
 
-        assert files != null;
-        for (File fl:
-                 files) {
-                    id++;
-                    serverFiles.add(prepareFileInfo(fl.toPath(),id));
-            }
+        serverFiles.addAll(prepareFilesInside(currentDirectory, serverFiles.size()));
 
         return serverFiles;
     }
 
-    private ServerFile prepareParentDirFile(Path currentDirectory) {
+    /**
+     *
+     * @param currentDirectory - Ссылка на текущую директорию пользователя на сервере
+     * @return List - обработанный список файлов в текущей директории
+     */
+    private List<ServerFile> prepareFilesInside(DirectoriesEntity currentDirectory, int currentSize) {
+        List<ServerFile> list = new ArrayList<>();
+        try {
+            for (LinksEntity link:
+                    DBConnector.getLinksInsideDir(currentDirectory)) {
+
+                ServerFile newFile = new ServerFile();
+                newFile.setPoz(currentSize);
+                newFile.setLastUpdate(link.getLastUpdate());
+                newFile.setFileName(link.getLinkName());
+                newFile.setDir(false);
+                newFile.setServerID(link.getFileId());
+                newFile.setSize(DBConnector.getFileSize(link.getFileId()));
+                newFile.setLinkID(link.getLinkId());
+                list.add(newFile);
+                currentSize++;
+            }
+        } catch (RuntimeException e) {
+            log.error(e.getMessage());
+        }
+
+        return list;
+    }
+
+    private List<ServerFile> prepareFoldersInside(DirectoriesEntity currentDirectory) {
+        List<ServerFile> list = new ArrayList<>();
+        int counter = 1;
+        try {
+            for (DirectoriesEntity dir:
+                DBConnector.getDirsInside(currentDirectory)) {
+
+                ServerFile newDir = new ServerFile();
+                newDir.setPoz(counter);
+                newDir.setLastUpdate(dir.getDateTime());
+                newDir.setFileName(dir.getDirName());
+                newDir.setDir(true);
+                newDir.setServerID(dir.getDirId());
+                newDir.setSize(-1L);
+                newDir.setLinkID(0);
+
+                list.add(newDir);
+                counter++;
+            }
+        } catch (RuntimeException e) {
+            log.error(e.getMessage());
+        }
+        return list;
+    }
+
+    private ServerFile prepareParentDirFile(DirectoriesEntity currentDirectory) {
         ServerFile parent = new ServerFile();
         parent.setDir(true);
         parent.setFileName(ServerFile.HOME_DIR_NAME);
         parent.setSize(-1L);
-        parent.setServerID(0);
-        try {
-            parent.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(currentDirectory).toInstant(), ZoneOffset.ofHours(0)));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        parent.setPoz(0);
+        parent.setServerID(currentDirectory.getDirId());
+        parent.setLastUpdate(currentDirectory.getDateTime());
+        parent.setLinkID(0);
 
         return parent;
     }
 
     /**
      * обработка и вызов функции получения списка файлов
-     * @param userID - id пользователя
+     * @param currentDirectory - ссылка на запись в БД текущей директории пользователя (
      * @return List<ServerFile> - список пользовательских файлов
      */
-    public List<ServerFile> getFilesOnServer(int userID, Path currentDirectory) {
-        return prepareServerFiles(userID, currentDirectory);
+    public List<ServerFile> getFilesOnServer(DirectoriesEntity currentDirectory, DirectoriesEntity homeDirectory) {
+        return prepareServerFiles(currentDirectory, homeDirectory);
     }
-
 
     /**
      * функция возвращает содержимое выбранного на клиенте файла из данных сервера
-     * @param fileName - имя файла в интерфейсе пользователя на стороне клиента
+     * @param fileID - id файла в таблице реальных файлов БД
      * @return byte[] - массив байтов содержимого файла
-     * @throws RuntimeException - в случае если выбран файл или не удалось найти физический файл на сервере
+     * @throws ServerCloudException - в случае если выбран файл или не удалось найти физический файл на сервере
      * @throws IOException - ошибка считывания данных файла
      */
-    public byte[] getFileData(String fileName, Path currentDirectory) throws RuntimeException, IOException {
+    public byte[] getFileData(long fileID) throws ServerCloudException, IOException {
 
         //в будущем заменится на фактический путь к файлу из SQL
-        Path pathToFile = currentDirectory.resolve(fileName);
+        Path pathToFile = Path.of(DIRECTORY).resolve(DBConnector.getServerPathToFile(fileID)).normalize();
 
         //проверки
         if (!Files.exists(pathToFile)){
-            throw new RuntimeException("Указанный файл не найден на сервере!");
+            throw new ServerCloudException("Указанный файл не найден на сервере!");
         }
         if (Files.isDirectory(pathToFile)) {
-            throw new RuntimeException("Выбранный файл является директорией!");
+            throw new ServerCloudException("Выбранный файл является директорией!");
         }
 
         //получение данных
@@ -125,60 +171,71 @@ public class FilesStorage {
     /**
      * сохраняет файл на сервере в директорию пользователя
      * @param fileData - входящие данные
-     * @param userID - ID пользователя
+     * @param serverDirectory - физический путь к папке на сервере
+     * @param dbDirectory - ссылка БД на текущую директорию сохранения файла
      * @throws IOException - в случае ошибки записи данных в файл на сервере
      */
-    public void saveFile(FileTransferData fileData, int userID, Path currentDirectory) throws IOException{
+    public void saveFile(FileTransferData fileData, Path serverDirectory, DirectoriesEntity dbDirectory) throws IOException{
 
-        /*
-        / тут будет SQL с userID
-         */
-        Files.write(currentDirectory.resolve(fileData.getName()), fileData.getData());
-
-    }
-
-    /**
-     * переходит в родительскую директорию текущей папки пользователя
-     */
-    public Path currentDirectoryUP(Path currentDirectory) throws RuntimeException{
-        /*
-        / место под SQL в будущем
-         */
-        return currentDirectory.getParent();
-    }
-
-
-    /**
-     * инициализация стартовых параметров пользователя
-     * @param userID - id пользователя в базе SQL
-     */
-    public Path getUsersStartPath(int userID) {
-
-        /*
-         *позже тут будет SQL данные получение
-         */
-        return Path.of(DIRECTORY);
-    }
-
-    /*
-    *
-     */
-    public Path currentDirectoryIN(StoragePathInRequest msg, Path current) throws RuntimeException{
+        Files.write(serverDirectory.resolve(fileData.getName()), fileData.getData());
 
         try {
-            Path newPath = current.resolve(msg.getDirName());
-            return newPath;
+            DBConnector.saveNewFile(fileData.getName(), dbDirectory);
+        } catch (ServerCloudException e) {
+            log.error(e.getMessage());
+            Files.delete(serverDirectory.resolve(fileData.getName()));
+        }
+    }
+
+    /**
+     * переходит в родительскую директорию текущей папки пользователя по таблице в БД
+     * @param currentDirectory - ссылка на текущую директорию, открытую на клиенте
+     */
+    public DirectoriesEntity currentDirectoryUP(DirectoriesEntity currentDirectory) throws RuntimeException{
+        return DBConnector.returnParentDirectory(currentDirectory);
+    }
+
+
+    /**
+    * обработка команды перехода внутрь указанного каталога
+     * @param msg - сообщение от клиента с информацией о цели перехода
+     */
+    public DirectoriesEntity currentDirectoryIN(StoragePathInRequest msg) throws RuntimeException{
+
+        try {
+            return DBConnector.getChildDir(msg.getDirID());
         } catch (Exception e) {
             throw new RuntimeException("Не удалось перейти внутрь каталога");
         }
 
     }
 
+    /**
+     * инициализация стартовых параметров пользователя
+     * @param login - String - имя пользователя в базе SQL, а так же имя каталога в директории файлохранилища
+     */
     public Path getUsersServerPath(String login) {
         Path dirPath = Path.of(DIRECTORY).normalize().resolve(login);
         if (new File(dirPath.toString()).mkdir()) log.debug("new directory was created.");
 
         log.debug("User's home DIR on server is: "+dirPath.toAbsolutePath());
         return dirPath;
+    }
+
+    /**
+     * создаёт в БД запись о новом каталоге
+     * @param folderName - имя новой директории
+     * @param currentDirectory - ссылка на текущий каталог пользователя
+     * @return true - если всё прошло успешно
+     * false - если сделать запись не удалось
+     */
+    public boolean createNewVirtualDir(String folderName, DirectoriesEntity currentDirectory) {
+        try {
+            DBConnector.createNewDir(folderName, currentDirectory.getDirId(), currentDirectory.getUserId());
+            return true;
+        } catch (ServerCloudException e) {
+            log.error("Failed to create new DIR record in DB");
+            return false;
+        }
     }
 }

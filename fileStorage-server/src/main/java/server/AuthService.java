@@ -7,7 +7,7 @@ public interface AuthService {
      * @param login - имя пользователя
      * @param password - пароль пользователя
      */
-    void registration(String login, String password);
+    void registration(String login, String password) throws ServerCloudException;
 
     /**
      * метод для авторизации пользователей
@@ -16,7 +16,7 @@ public interface AuthService {
      * @return true - в случае если такой пользователь зарегестрирован и указан правильный пароль
      * false - в случае неверных значений
      */
-    int authentication(String login, String password);
+    int authentication(String login, String password) throws ServerCloudException;
 
 
 }

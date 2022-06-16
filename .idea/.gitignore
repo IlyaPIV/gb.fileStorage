@@ -5,3 +5,5 @@
 /workspace.xml
 ../fileStorage-server/server_storage/
 *.class
+/dataSources/
+/inspectionProfiles/

@@ -5,7 +5,6 @@ import com.gb.filestorage.filestorageclient.network_IO.NetworkConnection;
 import com.gb.filestorage.filestorageclient.network_Netty.NettyConnection;
 import com.gb.filestorage.filestorageclient.terminal_NIO.TerminalClient;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
@@ -34,11 +33,11 @@ import java.net.URL;
 import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 @Slf4j
 public class ClientMainController implements Initializable {
-
 
     private Stage mainWindow;
     private AuthRegWindow logRegWindow;
@@ -63,6 +62,8 @@ public class ClientMainController implements Initializable {
     private TextField infoField;
     @FXML
     public Button btnTerminal; //old and not used
+    @FXML
+    public Button button_newDir;
     @FXML
     public Button button_share;
     @FXML
@@ -91,7 +92,8 @@ public class ClientMainController implements Initializable {
 
         prepareClientTable();
         prepareDisksBox();
-        updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+//        updateClientList(Paths.get(disksBox.getSelectionModel().getSelectedItem()));
+        updateClientList(Paths.get(System.getProperty("user.home")));
         prepareServerTable();
 
         Platform.runLater(()->{
@@ -178,15 +180,16 @@ public class ClientMainController implements Initializable {
      */
     private void prepareServerTable(){
 
-        TableColumn<ServerFile,Boolean> isDirColumn = new TableColumn<>("is dir");
-        isDirColumn.setCellValueFactory(param ->
-                new SimpleBooleanProperty(param.getValue().isDir()));
-        isDirColumn.setVisible(false);
+        TableColumn<ServerFile,Integer> pozColumn = new TableColumn<>("position");
+        pozColumn.setCellValueFactory(param ->
+                new SimpleObjectProperty<>(param.getValue().getPoz()));
+        pozColumn.setVisible(false);
 
         TableColumn<ServerFile,String> fileNameColumn = new TableColumn<>("Name");
         fileNameColumn.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getFileName()));
         fileNameColumn.setPrefWidth(305);
+        fileNameColumn.setSortable(false);
 
 
         TableColumn<ServerFile, Long> fileSizeColumn = new TableColumn<>("Size");
@@ -209,16 +212,17 @@ public class ClientMainController implements Initializable {
                 }
             };
         });
+        fileSizeColumn.setSortable(false);
 
         TableColumn<ServerFile, String> fileDataColumn = new TableColumn<>("Date");
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         fileDataColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getLastUpdate().format(dtf)));
         fileDataColumn.setPrefWidth(120);
-
+        fileDataColumn.setSortable(false);
 
 
         serverFilesTable.getColumns().addAll(fileNameColumn, fileSizeColumn, fileDataColumn);
-        serverFilesTable.getSortOrder().add(fileNameColumn);
+        serverFilesTable.getSortOrder().add(pozColumn);
 
 
         serverFilesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -326,6 +330,7 @@ public class ClientMainController implements Initializable {
         button_share.setDisable(!isConnected);
         button_rename.setDisable(!isConnected);
         button_upload.setDisable(!isConnected);
+        button_newDir.setDisable(!isConnected);
         serverFilesTable.setDisable(!isConnected);
         button_connect.setStyle(isConnected ? "-fx-background-color: green" : "-fx-background-color: red");
     }
@@ -337,6 +342,17 @@ public class ClientMainController implements Initializable {
     public void setInfoText(String text){
         infoField.clear();
         infoField.setText(text.toUpperCase());
+        infoField.setStyle("-fx-background-color: lightgray");
+    }
+
+    /**
+     * выводит текст серверного сообщения в инфо поле
+     * @param text текст сообщения
+     */
+    public void setInfoText(String text, boolean fail){
+        infoField.clear();
+        infoField.setText(text.toUpperCase());
+        infoField.setStyle(fail ? "-fx-background-color: pink" : "-fx-background-color: lightgreen");
     }
 
     /**
@@ -379,6 +395,22 @@ public class ClientMainController implements Initializable {
         }
     }
 
+    /**
+     * обработчик нажатия кнопки "Добавить папку"
+     * @param actionEvent - событие нажатия на кнопку
+     */
+    @FXML
+    public void cmdAddDir(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog("new directory name");
+
+        dialog.setTitle("Fill the field");
+        dialog.setHeaderText("Enter new folder name:");
+        dialog.setContentText("DIR name:");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(this::tryToCreateNewFolderOnServer);
+    }
 
     /*
      *
@@ -413,14 +445,12 @@ public class ClientMainController implements Initializable {
         if (!isConnected) {
             try {
                 createConnectionToServer();
-
                 openLogRegWindow();
-                log.debug("Opening auth/reg window");
 
+                log.debug("Opening auth/reg window");
             } catch (IOException e) {
                 log.error(e.getMessage());
             }
-
         } else {
             closeNettyConnection();
             this.isConnected = false;
@@ -544,6 +574,40 @@ public class ClientMainController implements Initializable {
         logRegWindow.getAnswerFromServer(answer);
     }
 
+
+    /**
+     * попытка создать новую папку в текущей директории на сервере
+     * @param newName - имя новой папки
+     */
+    public void tryToCreateNewFolderOnServer(String newName) {
+        if (checkServersTableForDuplicateDirName(newName)) {
+            setInfoText("New DIR was created!", false);
+            try {
+                nettyConnection.createNewDir(newName);
+            } catch (IOException e) {
+                setInfoText(e.getMessage(), true);
+                log.error("Ошибка отправки запроса на сервер для создания нового каталога");
+            }
+        } else setInfoText("This name is already used!", true);
+    }
+
+    /**
+     * проверяет текущую директорию на серверной стороне на наличие дубликата по имени папки
+     * @param newName - имя новой папки
+     * @return - true если имя доступно
+     * false если папка с таким именем уже существует
+     */
+    private boolean checkServersTableForDuplicateDirName(String newName) {
+
+        for (ServerFile sf:
+             serverFilesTable.getItems()) {
+
+            if (sf.getFileName().equals(newName) && sf.isDir()) return false;
+        }
+
+        return true;
+    }
+
     /*
     * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================
     *
@@ -651,5 +715,6 @@ public class ClientMainController implements Initializable {
 
         connection.tryToAuthOnServer();
     }
+
 
 }

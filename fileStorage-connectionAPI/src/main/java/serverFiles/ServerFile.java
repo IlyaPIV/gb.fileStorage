@@ -12,8 +12,11 @@ public class ServerFile implements Serializable {
     private long size;
     private LocalDateTime lastUpdate;
     private long serverID;
+    private int linkID;
 
     private boolean isDir;
+
+    private int poz; //порядковый номер для сортировки
 
     public String getFileName() {
         return fileName;
@@ -55,6 +58,22 @@ public class ServerFile implements Serializable {
         isDir = dir;
     }
 
+    public void setPoz(int poz) {
+        this.poz = poz;
+    }
+
+    public int getPoz() {
+        return poz;
+    }
+
+    public int getLinkID() {
+        return linkID;
+    }
+
+    public void setLinkID(int linkID) {
+        this.linkID = linkID;
+    }
+
     @Override
     public String toString() {
         return "ServerFile{" +
@@ -62,7 +81,8 @@ public class ServerFile implements Serializable {
                 + fileName + '\'' +
                 ", size=" + size + " bytes"+
                 ", lastUpdate=" + lastUpdate +
-                ", serverID=" + serverID +
+                ", fileID=" + serverID +
+                ", linkID=" + linkID +
                 '}';
     }
 

@@ -17,6 +17,9 @@
             <basic name="usersDirectory">
                 <column name="users_directory"/>
             </basic>
+            <basic name="lastUpdate">
+                <column name="last_update"/>
+            </basic>
         </attributes>
     </entity>
 </entity-mappings>
