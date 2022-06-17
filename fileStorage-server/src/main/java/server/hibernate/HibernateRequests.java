@@ -223,7 +223,21 @@ public class HibernateRequests {
         return "FROM LinksEntity WHERE usersDirectory = :userDir";
     }
 
-
+    /**
+     * получает запись в БД и меняет в ней значение поля name
+     * @param linkID - id записи
+     * @param newName - новое значение
+     */
+    public static void changeLinkName(int linkID, String newName) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            LinksEntity link = session.get(LinksEntity.class, linkID);
+            link.setLinkName(newName);
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось обновить запись в БД");
+        }
+    }
 
     /*
      * ================   FILES  ================
@@ -279,6 +293,13 @@ public class HibernateRequests {
         }
     }
 
+    /**
+     * создаёт новую запись в таблице директорий
+     * @param folderName - имя папки
+     * @param dirId - id родительского каталога
+     * @param userId - id пользователя
+     * @throws ServerCloudException - в случае ошибки работы с БД
+     */
     public static void createNewDirectory(String folderName, int dirId, int userId) throws ServerCloudException{
         try (Session session = HibernateUtil.getSession()) {
             session.beginTransaction();
@@ -288,4 +309,6 @@ public class HibernateRequests {
             throw new ServerCloudException("Не удалось создать новую запись в таблицу каталогов");
         }
     }
+
+
 }

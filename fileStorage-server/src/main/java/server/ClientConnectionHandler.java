@@ -16,9 +16,9 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
 
     private final FilesStorage filesStorage;
     private final DBConnector dbConnector;
-    private DirectoriesEntity usersHomeDirectory;
-    private DirectoriesEntity currentDirectory;
-    private Path userServerDirectory;
+    private DirectoriesEntity usersHomeDirectory; //ссылка на родительскую директорию пользователя в БД
+    private DirectoriesEntity currentDirectory; //ссылка на текущую директорию пользователя
+    private Path userServerDirectory; //физический путь к папке файлов пользователя на сервере
     private int userID;
 
     public ClientConnectionHandler(FilesStorage filesStorage, DBConnector dbConnector){
@@ -122,17 +122,23 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             } else {
                 chc.writeAndFlush(new DatabaseOperationResult(false,"Failed to create new DIR record in DB"));
             }
+        } else if (inMessage instanceof FileRenameRequest request) {
+            log.debug("Attempt to rename links name");
+            if (DBConnector.renameLink(request.getLinkID(), request.getNewName())) {
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                log.debug("New links name is set");
+                chc.writeAndFlush(new DatabaseOperationResult(true, "File's name was changed."));
+            } else {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to rename file's name"));
+            }
         } else {
             log.error("Unknown incoming message format!!!");
         }
 
-
     }
 
     private AuthRegAnswer tryToAuthUser(AuthRegRequest request) {
-        /*
-         * место под сервис авторизации
-         */
+
         try {
             this.userID = dbConnector.authentication(request.getLogin(), request.getPassword());
             setUserSettings(request.getLogin());

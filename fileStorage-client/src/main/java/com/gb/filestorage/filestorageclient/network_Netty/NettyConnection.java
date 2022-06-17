@@ -208,4 +208,8 @@ public class NettyConnection {
     public void createNewDir(String newName) throws IOException{
         write(new NewDirRequest(newName));
     }
+
+    public void sendFileRenameRequest(int linkID, String newName) throws IOException{
+        write(new FileRenameRequest(linkID, newName));
+    }
 }

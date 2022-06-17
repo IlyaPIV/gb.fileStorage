@@ -20,6 +20,7 @@ public class DBConnector implements AuthService {
     }
 
 
+
     /*
     * ============================ AUTH SERVICE =========================
      */
@@ -143,7 +144,6 @@ public class DBConnector implements AuthService {
 
     }
 
-
     /**
      * возвращает строковый путь к файлу (каталог + настоящее имя файла)
      * @param fileID - айди файла в БД
@@ -162,10 +162,29 @@ public class DBConnector implements AuthService {
         }
     }
 
-    // делает запись в БД о новой вложенной папке в текущем каталоге пользователя
+    /**
+     *  делает запись в БД о новой вложенной папке в текущем каталоге пользователя
+     */
     public static void createNewDir(String folderName, int dirId, int userId) throws ServerCloudException{
         HibernateRequests.createNewDirectory(folderName, dirId, userId);
     }
 
+    /**
+     * меняет имя ссылки в БД
+     * @param linkID - id записи в таблице ссылок
+     * @param newName - новое имя записи
+     * @return - true в случае успеха
+     * false - в случае ошибки в ходе транзакций
+     */
+    public static boolean renameLink(int linkID, String newName) {
+        try {
+            HibernateRequests.changeLinkName(linkID, newName);
+        } catch (ServerCloudException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
 
 }
