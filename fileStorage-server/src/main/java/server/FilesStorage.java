@@ -21,7 +21,9 @@ public class FilesStorage {
 
     public static final String DIRECTORY = "fileStorage-server\\server_storage\\";
 
-    public FilesStorage() {
+    private static FilesStorage storage;
+
+    private FilesStorage() {
 
     }
 
@@ -45,6 +47,15 @@ public class FilesStorage {
 //
 //        return sf;
 //    }
+
+    /**
+     * получение ссылки на хранилище файловое
+     * @return - ссылка
+     */
+    public static FilesStorage getFilesStorage() {
+        if (storage == null) storage = new FilesStorage();
+        return storage;
+    }
 
 
     /**
@@ -172,15 +183,18 @@ public class FilesStorage {
      * сохраняет файл на сервере в директорию пользователя
      * @param fileData - входящие данные
      * @param serverDirectory - физический путь к папке на сервере
-     * @param dbDirectory - ссылка БД на текущую директорию сохранения файла
+     * @param dbLinkDirectory - ссылка БД на текущую директорию сохранения ссылки
+     * @param dbFileDirectory - ссылка БД на текущую директорию сохранения файла
      * @throws IOException - в случае ошибки записи данных в файл на сервере
      */
-    public void saveFile(FileTransferData fileData, Path serverDirectory, DirectoriesEntity dbDirectory) throws IOException{
+    public void saveFile(FileTransferData fileData, Path serverDirectory
+                                , DirectoriesEntity dbLinkDirectory
+                                , DirectoriesEntity dbFileDirectory) throws IOException{
 
         Files.write(serverDirectory.resolve(fileData.getName()), fileData.getData());
 
         try {
-            DBConnector.saveNewFile(fileData.getName(), dbDirectory);
+            DBConnector.saveNewFile(fileData.getName(), dbLinkDirectory, dbFileDirectory);
         } catch (ServerCloudException e) {
             log.error(e.getMessage());
             Files.delete(serverDirectory.resolve(fileData.getName()));
@@ -236,6 +250,15 @@ public class FilesStorage {
         } catch (ServerCloudException e) {
             log.error("Failed to create new DIR record in DB");
             return false;
+        }
+    }
+
+    public void deleteRealFile(String fileName, String dirName) throws ServerCloudException{
+        Path filePath = Path.of(DIRECTORY).normalize().resolve(dirName).resolve(fileName);
+        try {
+          Files.delete(filePath);
+        } catch (IOException e) {
+            throw new ServerCloudException("Failed to delete file: " + filePath.toString());
         }
     }
 }

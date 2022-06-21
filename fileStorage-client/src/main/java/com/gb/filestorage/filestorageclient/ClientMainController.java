@@ -26,6 +26,7 @@ import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 import messages.AuthRegAnswer;
 import messages.AuthRegRequest;
+import messages.DeleteRequest;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -436,6 +437,15 @@ public class ClientMainController implements Initializable {
         }
     }
 
+    /**
+     * обработчик нажатия кнопки удаления файла на сервере
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdDelete(ActionEvent actionEvent) {
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+        tryToDeleteOnServer(selectedFile);
+    }
+
 
 
     /*
@@ -648,6 +658,26 @@ public class ClientMainController implements Initializable {
         }
 
         return true;
+    }
+
+    /**
+     * подготавливает сообщение-запрос на удаление к отправке на сервер
+     * @param selectedFile - выбранный файл/директория в папке на сервере
+     */
+    private void tryToDeleteOnServer(ServerFile selectedFile) {
+        if (selectedFile.isDir() && selectedFile.getServerID()==0) {
+            log.debug("Попытка удалить корневой каталог.");
+            setInfoText("Can't delete parent directory.", true);
+        } else {
+            try {
+                nettyConnection.sendDeleteRequestOnServer(new DeleteRequest(selectedFile.isDir()
+                        , selectedFile.isDir() ? (int) selectedFile.getServerID() : selectedFile.getLinkID()));
+                log.debug("Запрос на удаление успешно отправлен на сервер.");
+            } catch (IOException e) {
+                log.error("Failed to send delete request");
+                setInfoText("Failed to send delete request", true);
+            }
+        }
     }
 
     /*

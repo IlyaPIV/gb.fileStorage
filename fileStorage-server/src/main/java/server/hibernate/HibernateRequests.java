@@ -153,6 +153,11 @@ public class HibernateRequests {
         }
     }
 
+    /**
+     * возвращает список директорий внутри указанного каталога
+     * @param currentDirectory - текущий родительский каталог
+     * @return List - список внутренних каталогов
+     */
     public static List<DirectoriesEntity> getListChildDirs(DirectoriesEntity currentDirectory) {
         try (Session session = HibernateUtil.getSession()) {
             session.beginTransaction();
@@ -175,6 +180,48 @@ public class HibernateRequests {
         return "FROM DirectoriesEntity WHERE parentDir = :paramParentID";
     }
 
+
+    /**
+     * создаёт новую запись в таблице директорий
+     * @param folderName - имя папки
+     * @param dirId - id родительского каталога
+     * @param userId - id пользователя
+     * @throws ServerCloudException - в случае ошибки работы с БД
+     */
+    public static void createNewDirectory(String folderName, int dirId, int userId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            session.persist(new DirectoriesEntity(folderName, dirId, userId));
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось создать новую запись в таблицу каталогов");
+        }
+    }
+
+    /**
+     * Удаляет каталог если он пустой
+     * @param dirId - айди родительского каталога
+     */
+    public static void deleteDirAndLinks(int dirId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+
+            List<LinksEntity> links = session.createQuery(queryLinksFindByDir(), LinksEntity.class)
+                                            .setParameter("userDir", dirId).list();
+            List<DirectoriesEntity> dirs = session.createQuery(queryDirectoriesChildren(), DirectoriesEntity.class)
+                                            .setParameter("paramParentID", dirId).list();
+            if (links.size()!=0 || dirs.size()!=0) {
+                throw new ServerCloudException("Deleting directory is not empty.");
+            }
+
+            DirectoriesEntity currentDir = session.get(DirectoriesEntity.class, dirId);
+            session.remove(currentDir);
+
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            throw new ServerCloudException("Failed to delete directory");
+        }
+    }
 
     /*
      * ================   LINKS  ================
@@ -239,6 +286,43 @@ public class HibernateRequests {
         }
     }
 
+    /**
+     * удаляет ссылку на файл и (если она единственная для файла) - сам файл и запись на него в БД
+     * @param linkId - айди ссылки
+     */
+    public static void deleteLinkOnFile(int linkId) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            LinksEntity link = session.get(LinksEntity.class, linkId);
+            
+            List<LinksEntity> listOfLinks = session.createQuery(queryLinksByFileID(), LinksEntity.class)
+                            .setParameter("fileID", link.getFileId()).list();
+
+            session.remove(link);
+
+            if (listOfLinks.size()==1) {
+                //можно смело удалять файл - больше нет на него ссылок
+                RealFilesEntity file = session.get(RealFilesEntity.class, link.getFileId());
+                DirectoriesEntity fileDir = session.get(DirectoriesEntity.class, file.getDirectoryId());
+                DBConnector.deleteRealFile(file.getName(), fileDir.getDirName());
+                session.remove(file);
+            }
+
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            
+            throw new ServerCloudException("Не удалось удалить ссылку");
+        }
+    }
+
+    /**
+     * подготавливает текст запроса поиска ссылок на конкретный файл
+     * @return String - текст запроса
+     */
+    private static String queryLinksByFileID(){
+        return "FROM LinksEntity WHERE fileId = :fileID";
+    }
+    
     /*
      * ================   FILES  ================
      */
@@ -290,23 +374,6 @@ public class HibernateRequests {
             session.getTransaction().commit();
         } catch (Exception e) {
             throw new ServerCloudException("Не удалось удалить запись с ID = " + idFile);
-        }
-    }
-
-    /**
-     * создаёт новую запись в таблице директорий
-     * @param folderName - имя папки
-     * @param dirId - id родительского каталога
-     * @param userId - id пользователя
-     * @throws ServerCloudException - в случае ошибки работы с БД
-     */
-    public static void createNewDirectory(String folderName, int dirId, int userId) throws ServerCloudException{
-        try (Session session = HibernateUtil.getSession()) {
-            session.beginTransaction();
-            session.persist(new DirectoriesEntity(folderName, dirId, userId));
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            throw new ServerCloudException("Не удалось создать новую запись в таблицу каталогов");
         }
     }
 

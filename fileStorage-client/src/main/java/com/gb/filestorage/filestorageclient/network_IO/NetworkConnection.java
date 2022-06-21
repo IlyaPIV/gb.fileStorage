@@ -2,6 +2,7 @@ package com.gb.filestorage.filestorageclient.network_IO;
 
 import com.gb.filestorage.filestorageclient.ClientMainController;
 import constants.ConnectionCommands;
+import messages.DeleteRequest;
 import serverFiles.ServerFile;
 
 import java.io.*;
@@ -77,9 +78,13 @@ public class NetworkConnection {
         } catch (IOException e) {
             e.printStackTrace();
             //логирование ошибки отправки сообщения
+
         }
     }
 
+    /**
+     * процедура запуска рабочего цикла взаимодействия с сервером
+     */
     public void startWorkingThreadWithServer() {
         Thread wthrd = new Thread(()->{
            try {
@@ -308,4 +313,5 @@ public class NetworkConnection {
     public void fileOnServerShare(){
         sendMsgToServer(ConnectionCommands.FILE_SHARE);
     }
+
 }

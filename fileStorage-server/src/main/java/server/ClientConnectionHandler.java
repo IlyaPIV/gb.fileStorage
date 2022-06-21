@@ -51,35 +51,27 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                         new FileTransferData(filesStorage.getFileData(fdr.getFileID()), fdr.getFileName());
                 chc.writeAndFlush(fileData);
                 log.debug("File was send to user");
-            } catch (RuntimeException e) {
-                log.warn(e.getMessage());
-                chc.writeAndFlush(new ErrorAnswerMessage(e.getMessage()));
-            } catch (IOException e) {
+            } catch (RuntimeException | IOException e) {
                 log.error(e.getMessage());
-                chc.writeAndFlush(new ErrorAnswerMessage(e.getMessage()));
+                chc.writeAndFlush(new DatabaseOperationResult(false, e.getMessage()));
             }
 
         } else if (inMessage instanceof ServerFilesListRequest) {
-            /*
-            //доработать id юзера
-            */
+
             chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
 
         } else if (inMessage instanceof FileTransferData fileData) {
 
             log.debug(String.format("incoming file data: { name = %s; size = %d}",
-                                                fileData.getName(), fileData.getSize()));
+                    fileData.getName(), fileData.getSize()));
 
-            /*
-            //доработать id юзера
-            */
             try {
-                filesStorage.saveFile(fileData, userServerDirectory, currentDirectory);
+                filesStorage.saveFile(fileData, userServerDirectory, currentDirectory, usersHomeDirectory);
 
                 chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
             } catch (IOException e) {
                 log.error("Error with saving file on server!!!");
-                chc.writeAndFlush(new ErrorAnswerMessage("Error with saving file on server!!!"));
+                chc.writeAndFlush(new DatabaseOperationResult(false,"Error with saving file on server!!!"));
             }
 
         } else if (inMessage instanceof StoragePathUpRequest) {
@@ -89,8 +81,8 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 currentDirectory = filesStorage.currentDirectoryUP(currentDirectory);
                 chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
                 log.debug("Server files list was sent.");
-            } else  {
-                chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory UP."));
+            } else {
+                chc.writeAndFlush(new DatabaseOperationResult(false,"Can't change directory UP."));
             }
 
         } else if (inMessage instanceof StoragePathInRequest msg) {
@@ -100,7 +92,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
             } catch (RuntimeException e) {
                 log.error(e.getMessage());
-                chc.writeAndFlush(new ErrorAnswerMessage("Can't change directory IN."));
+                chc.writeAndFlush(new DatabaseOperationResult(false,"Can't change directory IN."));
             }
 
         } else if (inMessage instanceof AuthRegRequest request) {
@@ -120,7 +112,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 log.debug("New server files list was sent.");
                 chc.writeAndFlush(new DatabaseOperationResult(true, "New DIR was created on server"));
             } else {
-                chc.writeAndFlush(new DatabaseOperationResult(false,"Failed to create new DIR record in DB"));
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to create new DIR record in DB"));
             }
         } else if (inMessage instanceof FileRenameRequest request) {
             log.debug("Attempt to rename links name");
@@ -130,6 +122,15 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 chc.writeAndFlush(new DatabaseOperationResult(true, "File's name was changed."));
             } else {
                 chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to rename file's name"));
+            }
+        } else if (inMessage instanceof DeleteRequest deleteRequest) {
+            log.debug("Attempt to delete " + (deleteRequest.isDir() ? "directory." : "file."));
+            if (DBConnector.deleteInDB(deleteRequest.isDir(), deleteRequest.getId())) {
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                log.debug("Deleting was successfully finished");
+                chc.writeAndFlush(new DatabaseOperationResult(true, "Deleting was successfully finished"));
+            } else {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to delete " +  (deleteRequest.isDir() ? "directory." : "file.")));
             }
         } else {
             log.error("Unknown incoming message format!!!");
