@@ -202,10 +202,29 @@ public class NettyConnection {
     }
 
     /**
-     * отправляет запрос на сервер
+     * отправляет запрос на сервер о создании нового каталога в текущей директории пользователя
      * @param newName - имя каталога на сервере
      */
     public void createNewDir(String newName) throws IOException{
         write(new NewDirRequest(newName));
+    }
+
+    /**
+     * отправляет запрос на переименование файла/ссылки на сервер
+     * @param linkID - id ссылки
+     * @param newName - новое имя
+     * @throws IOException - ошибка отправки сообщения
+     */
+    public void sendFileRenameRequest(int linkID, String newName) throws IOException{
+        write(new FileRenameRequest(linkID, newName));
+    }
+
+    /**
+     * отправляет запрос на удаление файла/папки на сервере в текущем каталоге пользователя
+     * @param deleteRequest - подготовленное сообщение-запрос
+     * @throws IOException - ошибка отправки сообщения
+     */
+    public void sendDeleteRequestOnServer(DeleteRequest deleteRequest) throws IOException{
+        write(deleteRequest);
     }
 }

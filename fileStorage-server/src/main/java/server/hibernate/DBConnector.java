@@ -20,6 +20,9 @@ public class DBConnector implements AuthService {
     }
 
 
+
+
+
     /*
     * ============================ AUTH SERVICE =========================
      */
@@ -130,11 +133,19 @@ public class DBConnector implements AuthService {
 
     }
 
-
-    public static void saveNewFile(String name, DirectoriesEntity dbDirectory) throws ServerCloudException {
-        int idFile = HibernateRequests.createRealFileInfo(name, dbDirectory.getDirId());
+    /**
+     * сохраняет в БД записи о новом файле
+     * @param name - имя файла
+     * @param dbLinkDirectory - виртуальный каталог в БД, где лежит ссылка на файл
+     * @param dbFileDirectory - виртуальный каталог в БД, где физически лежит файл на сервере
+     * @throws ServerCloudException - ошибка выполнения операции
+     */
+    public static void saveNewFile(String name
+                                    , DirectoriesEntity dbLinkDirectory
+                                    , DirectoriesEntity dbFileDirectory) throws ServerCloudException {
+        int idFile = HibernateRequests.createRealFileInfo(name, dbFileDirectory.getDirId());
         try {
-            HibernateRequests.createLinkToFile(name, idFile, dbDirectory.getDirId());
+            HibernateRequests.createLinkToFile(name, idFile, dbLinkDirectory.getDirId());
         } catch (ServerCloudException e) {
             //удалить запись в БД с файлом
             HibernateRequests.deleteRealFileInfo(idFile);
@@ -142,7 +153,6 @@ public class DBConnector implements AuthService {
         }
 
     }
-
 
     /**
      * возвращает строковый путь к файлу (каталог + настоящее имя файла)
@@ -162,10 +172,56 @@ public class DBConnector implements AuthService {
         }
     }
 
-    // делает запись в БД о новой вложенной папке в текущем каталоге пользователя
+    /**
+     *  делает запись в БД о новой вложенной папке в текущем каталоге пользователя
+     */
     public static void createNewDir(String folderName, int dirId, int userId) throws ServerCloudException{
         HibernateRequests.createNewDirectory(folderName, dirId, userId);
     }
 
+    /**
+     * меняет имя ссылки в БД
+     * @param linkID - id записи в таблице ссылок
+     * @param newName - новое имя записи
+     * @return - true в случае успеха
+     * false - в случае ошибки в ходе транзакций
+     */
+    public static boolean renameLink(int linkID, String newName) {
+        try {
+            HibernateRequests.changeLinkName(linkID, newName);
+        } catch (ServerCloudException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * операция удаления в БД
+     * @param isDir - признак удаления каталога
+     * @param id - id ссылки/каталога
+     * @return true - в случае успешного выполнения всех операций
+     * false - в противном случае
+     */
+    public static boolean deleteInDB(boolean isDir, int id) {
+        try {
+            if (isDir) { HibernateRequests.deleteDirAndLinks(id); }
+                    else { HibernateRequests.deleteLinkOnFile(id); }
+            return true;
+        } catch (ServerCloudException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     *
+     * @param name - имя файла
+     * @param dirName - имя каталога
+     */
+    public static void deleteRealFile(String name, String dirName) throws ServerCloudException{
+        FilesStorage.getFilesStorage().deleteRealFile(name, dirName);
+    }
 
 }

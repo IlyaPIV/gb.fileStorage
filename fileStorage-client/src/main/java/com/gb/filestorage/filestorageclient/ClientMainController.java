@@ -26,6 +26,7 @@ import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 import messages.AuthRegAnswer;
 import messages.AuthRegRequest;
+import messages.DeleteRequest;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -412,6 +413,41 @@ public class ClientMainController implements Initializable {
         result.ifPresent(this::tryToCreateNewFolderOnServer);
     }
 
+    /**
+     * обработчик нажатия кнопки переименования файла на сервере
+     * @param actionEvent - ни на что не влияет
+     */
+    @FXML
+    public void cmdRename(ActionEvent actionEvent) {
+
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+
+        if (!selectedFile.isDir()) {
+            TextInputDialog dialog = new TextInputDialog(selectedFile.getFileName());
+
+            dialog.setTitle("Fill the field");
+            dialog.setHeaderText("Enter new folder name:");
+            dialog.setContentText("DIR name:");
+
+            Optional<String> result = dialog.showAndWait();
+
+            result.ifPresent(this::tryToRenameLinkOnServer);
+        } else {
+            setInfoText("Can't rename DIR. Please, choose file", true);
+        }
+    }
+
+    /**
+     * обработчик нажатия кнопки удаления файла на сервере
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdDelete(ActionEvent actionEvent) {
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+        tryToDeleteOnServer(selectedFile);
+    }
+
+
+
     /*
      *
      * ======================== МЕТОДЫ РАБОТЫ С СЕРВЕРОМ ==========================
@@ -580,7 +616,7 @@ public class ClientMainController implements Initializable {
      * @param newName - имя новой папки
      */
     public void tryToCreateNewFolderOnServer(String newName) {
-        if (checkServersTableForDuplicateDirName(newName)) {
+        if (checkServersTableForDuplicateName(newName, true)) {
             setInfoText("New DIR was created!", false);
             try {
                 nettyConnection.createNewDir(newName);
@@ -592,20 +628,56 @@ public class ClientMainController implements Initializable {
     }
 
     /**
+     * попытка переименовать выбранный файл на сервере
+     * @param newName - новое имя файла
+     */
+    private void tryToRenameLinkOnServer(String newName) {
+        if (checkServersTableForDuplicateName(newName, false)) {
+            try {
+                ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+                nettyConnection.sendFileRenameRequest(selectedFile.getLinkID(), newName);
+            } catch (IOException e) {
+                setInfoText(e.getMessage(), true);
+                log.error("Ошибка отправки запроса на сервер для переименования файла");
+            }
+        } else setInfoText("This name is already used!", true);
+    }
+
+    /**
      * проверяет текущую директорию на серверной стороне на наличие дубликата по имени папки
      * @param newName - имя новой папки
      * @return - true если имя доступно
      * false если папка с таким именем уже существует
      */
-    private boolean checkServersTableForDuplicateDirName(String newName) {
+    private boolean checkServersTableForDuplicateName(String newName, boolean isDir) {
 
         for (ServerFile sf:
              serverFilesTable.getItems()) {
 
-            if (sf.getFileName().equals(newName) && sf.isDir()) return false;
+            if (sf.getFileName().equals(newName) && sf.isDir()==isDir) return false;
         }
 
         return true;
+    }
+
+    /**
+     * подготавливает сообщение-запрос на удаление к отправке на сервер
+     * @param selectedFile - выбранный файл/директория в папке на сервере
+     */
+    private void tryToDeleteOnServer(ServerFile selectedFile) {
+        if (selectedFile.isDir() && selectedFile.getServerID()==0) {
+            log.debug("Попытка удалить корневой каталог.");
+            setInfoText("Can't delete parent directory.", true);
+        } else {
+            try {
+                nettyConnection.sendDeleteRequestOnServer(new DeleteRequest(selectedFile.isDir()
+                        , selectedFile.isDir() ? (int) selectedFile.getServerID() : selectedFile.getLinkID()));
+                log.debug("Запрос на удаление успешно отправлен на сервер.");
+            } catch (IOException e) {
+                log.error("Failed to send delete request");
+                setInfoText("Failed to send delete request", true);
+            }
+        }
     }
 
     /*
@@ -686,6 +758,8 @@ public class ClientMainController implements Initializable {
         terminalClient.sendMsgToServer(textInCmd);
 
     }
+
+
 
     /**
      * закрывает терминальное соединение с сервером - не работает корректно
