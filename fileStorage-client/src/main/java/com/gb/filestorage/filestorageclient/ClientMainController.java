@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import messages.AuthRegAnswer;
 import messages.AuthRegRequest;
 import messages.DeleteRequest;
+import messages.FileLinkData;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -446,7 +447,21 @@ public class ClientMainController implements Initializable {
         tryToDeleteOnServer(selectedFile);
     }
 
+    /**
+     * открывает окно для ввода ссылки на файл, чтобы добавить его в каталог пользователя
+     * если значение введено - отправляет запрос на сервер
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdAddFileLink(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Fill the field");
+        dialog.setHeaderText("Enter DB file's link");
+        dialog.setContentText("Link:");
 
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(this::tryAddLinkOnFile);
+    }
 
     /*
      *
@@ -679,6 +694,42 @@ public class ClientMainController implements Initializable {
             }
         }
     }
+
+    /**
+     * отправляет запрос на сервер получить зашифрованную ссылку на файл/ссылку
+     * @param actionEvent - ни на что не влияет
+     */
+    public void getFileLink(ActionEvent actionEvent) {
+        ServerFile currentLink = serverFilesTable.getSelectionModel().getSelectedItem();
+        if (currentLink.isDir()) {
+            setInfoText("Can't get link on directory.", true);
+            return;
+        }
+        try {
+            nettyConnection.sendFileLinkRequest(currentLink.getLinkID());
+            log.debug("Запрос на получение ссылки из БД на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send getLink request.");
+            setInfoText("Failed to send getLink request.", true);
+        }
+    }
+
+    /**
+     * отправляет запрос на сервер на добавление ссылки на файл в текущую директорию пользователя
+     * @param link - строковое значение зашифрованной ссылки
+     */
+    private void tryAddLinkOnFile(String link) {
+        try {
+            nettyConnection.sendFileLinkData(new FileLinkData(link));
+            log.debug("Отправлена крипто-ссылка на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send link to server");
+            setInfoText("Failed to send link to server", true);
+        }
+
+    }
+
+
 
     /*
     * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================

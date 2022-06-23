@@ -316,6 +316,23 @@ public class HibernateRequests {
     }
 
     /**
+     * возвращает LinkEntity ссылки по переданному ID
+     * @param linkID - id в базе данных
+     * @return LinkEntity - ссылка с данными
+     * @throws ServerCloudException - ошибка выполнения запроса
+     */
+    public static LinksEntity getLinkByID(int linkID) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            LinksEntity link = session.get(LinksEntity.class, linkID);
+            session.getTransaction().commit();
+            return link;
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось получить ссылку");
+        }
+    }
+
+    /**
      * подготавливает текст запроса поиска ссылок на конкретный файл
      * @return String - текст запроса
      */
@@ -376,6 +393,5 @@ public class HibernateRequests {
             throw new ServerCloudException("Не удалось удалить запись с ID = " + idFile);
         }
     }
-
 
 }

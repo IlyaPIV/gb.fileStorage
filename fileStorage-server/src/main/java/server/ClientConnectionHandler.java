@@ -44,9 +44,6 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         if (inMessage instanceof FileDownloadRequest fdr) {
 
             try {
-                /**
-                 * требуется поменять получение пути файла
-                 */
                 FileTransferData fileData =
                         new FileTransferData(filesStorage.getFileData(fdr.getFileID()), fdr.getFileName());
                 chc.writeAndFlush(fileData);
@@ -131,6 +128,25 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
                 chc.writeAndFlush(new DatabaseOperationResult(true, "Deleting was successfully finished"));
             } else {
                 chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to delete " +  (deleteRequest.isDir() ? "directory." : "file.")));
+            }
+        } else if (inMessage instanceof FileLinkRequest request) {
+            log.debug("Attempt to get crypto link on selected item");
+            try {
+                chc.writeAndFlush(new FileLinkData(DBConnector.getCryptoLink(request.getLinkID())));
+                log.debug("Ссылка на файл сформирована и отправлена пользователю");
+            } catch (ServerCloudException e) {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to get link on file"));
+            }
+
+        } else if (inMessage instanceof FileLinkData data) {
+            log.debug("Attempt to add file to current dir by link");
+            try {
+                DBConnector.addLinkByCryptoString(DBConnector.decryptLink(data.getCryptoLink()), currentDirectory);
+                log.debug("Ссылка успешно добавлена в каталог пользователя.");
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                chc.writeAndFlush(new DatabaseOperationResult(true, "Link was added to current directory"));
+            } catch (ServerCloudException e) {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to add link in current dir"));
             }
         } else {
             log.error("Unknown incoming message format!!!");

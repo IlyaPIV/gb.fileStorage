@@ -8,6 +8,7 @@ module fileStorage.server {
     requires jakarta.persistence;
     requires org.hibernate.orm.core;
     requires java.naming;
+    requires jakarta.xml.bind;
 
     opens server.hibernate.entity;
 }

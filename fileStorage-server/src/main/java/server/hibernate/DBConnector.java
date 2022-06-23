@@ -2,6 +2,7 @@ package server.hibernate;
 
 import lombok.extern.slf4j.Slf4j;
 import server.AuthService;
+import server.CryptoService;
 import server.FilesStorage;
 import server.ServerCloudException;
 import server.hibernate.entity.DirectoriesEntity;
@@ -18,9 +19,6 @@ public class DBConnector implements AuthService {
     public DBConnector() {
 
     }
-
-
-
 
 
     /*
@@ -216,12 +214,56 @@ public class DBConnector implements AuthService {
     }
 
     /**
-     *
+     * удаление физически файла с жёсткого диска
      * @param name - имя файла
      * @param dirName - имя каталога
      */
     public static void deleteRealFile(String name, String dirName) throws ServerCloudException{
         FilesStorage.getFilesStorage().deleteRealFile(name, dirName);
     }
+
+    /**
+     * получает зашифрованную строку с данными о запрошенном файле по ссылке
+     * @param linkID - id запрашиваемой ссылки
+     * @return String с зашифрованной ссылкой на файл в БД
+     * @throws ServerCloudException - ошибка шифрования сообщения
+     */
+    public static String getCryptoLink(int linkID) throws ServerCloudException{
+
+        LinksEntity link = HibernateRequests.getLinkByID(linkID);
+        RealFilesEntity realFiles = HibernateRequests.getFileByID(link.getFileId());
+
+        String textLink = String.format("%d~%s", realFiles.getFileId(), link.getLinkName());
+        try {
+            return CryptoService.getService().encryptString(textLink);
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось сформировать крипто ссылку");
+        }
+
+    }
+
+    /**
+     * расшифровывает строку в строку с данными о файле (id файла и имя ссылки)
+     * @param link - строковое зашифрованное сообщение
+     * @return String - расшифрованное сообщение в виде строки с данными
+     * @throws ServerCloudException - ошибка выполнения операции расшифровки
+     */
+    public static String decryptLink(String link) throws ServerCloudException {
+        return CryptoService.getService().decryptString(link);
+    }
+
+    /**
+     * подготавливает и отправляет запрос на запись в БД новой ссылки на файл
+     * @param decryptLink - строка с данными из ссылки
+     * @param currentDirectory - текущая виртуальная директория пользователя
+     * @throws ServerCloudException - ошибка выполнения операции
+     */
+    public static void addLinkByCryptoString(String decryptLink, DirectoriesEntity currentDirectory) throws ServerCloudException {
+        String[] tokens = decryptLink.split("~");
+        int fileID = Integer.parseInt(tokens[0]);
+        String linkName = tokens[1];
+        HibernateRequests.createLinkToFile(linkName, fileID, currentDirectory.getDirId());
+    }
+
 
 }

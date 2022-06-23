@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dataSource name="fileStorage-Server/Hibernate">
-  <database-model serializer="dbm" dbms="POSTGRES" family-id="POSTGRES" format-version="4.39">
+  <database-model serializer="dbm" dbms="POSTGRES" family-id="POSTGRES" format-version="4.40">
     <root id="1">
       <DateStyle>mdy</DateStyle>
       <Grants>1||10|c|G
@@ -32560,15 +32560,12 @@ parent_dir</ColNames>
       <CollationParentNames>pg_catalog</CollationParentNames>
     </index>
     <key id="5007" parent="4995" name="pk_dir_id">
-      <ColNames>dir_id</ColNames>
       <ObjectId>319674676</ObjectId>
       <Primary>1</Primary>
       <StateNumber>46285743</StateNumber>
       <UnderlyingIndexId>319674675</UnderlyingIndexId>
     </key>
     <key id="5008" parent="4995" name="uniq_dir_name">
-      <ColNames>dir_name
-parent_dir</ColNames>
       <ObjectId>319674679</ObjectId>
       <StateNumber>46285743</StateNumber>
       <UnderlyingIndexId>319674678</UnderlyingIndexId>
@@ -32615,7 +32612,6 @@ parent_dir</ColNames>
       <ObjectId>319692220</ObjectId>
       <RefColNames>file_id</RefColNames>
       <RefColPositions>1</RefColPositions>
-      <RefKeyName>pk_realfile</RefKeyName>
       <StateNumber>46303558</StateNumber>
       <RefTableId>319684391</RefTableId>
       <RefTableName>realFiles</RefTableName>
@@ -32626,7 +32622,6 @@ parent_dir</ColNames>
       <ObjectId>319692215</ObjectId>
       <RefColNames>dir_id</RefColNames>
       <RefColPositions>1</RefColPositions>
-      <RefKeyName>pk_dir_id</RefKeyName>
       <StateNumber>46303558</StateNumber>
       <RefTableId>319674671</RefTableId>
       <RefTableName>directories</RefTableName>
@@ -32655,15 +32650,12 @@ pg_catalog</CollationParentNames>
 default</CollationNames>
     </index>
     <key id="5018" parent="4996" name="pk_link_id">
-      <ColNames>link_id</ColNames>
       <ObjectId>319692212</ObjectId>
       <Primary>1</Primary>
       <StateNumber>46303558</StateNumber>
       <UnderlyingIndexId>319692211</UnderlyingIndexId>
     </key>
     <key id="5019" parent="4996" name="uniq_link">
-      <ColNames>users_directory
-link_name</ColNames>
       <ObjectId>319692214</ObjectId>
       <StateNumber>46303558</StateNumber>
       <UnderlyingIndexId>319692213</UnderlyingIndexId>
@@ -32695,7 +32687,6 @@ link_name</ColNames>
       <ObjectId>319684403</ObjectId>
       <RefColNames>dir_id</RefColNames>
       <RefColPositions>1</RefColPositions>
-      <RefKeyName>pk_dir_id</RefKeyName>
       <StateNumber>46300319</StateNumber>
       <RefTableId>319674671</RefTableId>
       <RefTableName>directories</RefTableName>
@@ -32724,15 +32715,12 @@ pg_catalog</CollationParentNames>
 default</CollationNames>
     </index>
     <key id="5026" parent="4997" name="pk_realfile">
-      <ColNames>file_id</ColNames>
       <ObjectId>319684399</ObjectId>
       <Primary>1</Primary>
       <StateNumber>46300319</StateNumber>
       <UnderlyingIndexId>319684398</UnderlyingIndexId>
     </key>
     <key id="5027" parent="4997" name="uniq_filename">
-      <ColNames>directory_id
-name</ColNames>
       <ObjectId>319684402</ObjectId>
       <StateNumber>46300319</StateNumber>
       <UnderlyingIndexId>319684401</UnderlyingIndexId>
@@ -32778,14 +32766,12 @@ name</ColNames>
       <CollationParentNames>pg_catalog</CollationParentNames>
     </index>
     <key id="5033" parent="4998" name="pk_user_id">
-      <ColNames>user_id</ColNames>
       <ObjectId>319628064</ObjectId>
       <Primary>1</Primary>
       <StateNumber>46285923</StateNumber>
       <UnderlyingIndexId>319628063</UnderlyingIndexId>
     </key>
     <key id="5034" parent="4998" name="name">
-      <ColNames>login</ColNames>
       <ObjectId>319628066</ObjectId>
       <StateNumber>46241350</StateNumber>
       <UnderlyingIndexId>319628065</UnderlyingIndexId>

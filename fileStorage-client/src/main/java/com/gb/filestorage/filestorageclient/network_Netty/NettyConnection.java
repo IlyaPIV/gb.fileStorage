@@ -67,6 +67,10 @@ public class NettyConnection {
                             clientUI.GetAuthRegAnswer(answer);
                         } else if (inMsg instanceof DatabaseOperationResult result) {
                             clientUI.setInfoText(result.getMessage(), !result.isResult());
+                        } else if (inMsg instanceof FileLinkData link) {
+                            clientUI.setInfoText(link.getCryptoLink());
+                        } else {
+                            clientUI.setInfoText("unknown incoming message from server", true);
                         }
                     } catch (IOException e) {
                         log.error("Error with reading input channel");
@@ -91,6 +95,7 @@ public class NettyConnection {
             /*
             тут будет обработка такого события
              */
+
         } else {
             try {
                 Files.write(newFilePath, inMsg.getData());
@@ -226,5 +231,22 @@ public class NettyConnection {
      */
     public void sendDeleteRequestOnServer(DeleteRequest deleteRequest) throws IOException{
         write(deleteRequest);
+    }
+
+    /**
+     * отправляет на сервер запрос на получение зашифрованной ссылки
+     * @param linkID - id выбранной ссылки
+     */
+    public void sendFileLinkRequest(int linkID) throws IOException{
+        write(new FileLinkRequest(linkID));
+    }
+
+    /**
+     * Отправляет на сервер сообщение с сылкой на файл в БД.
+     * Если ссылка корректна - файл добавится в текущий каталог пользователя
+     * @param fileLinkData - подготовленное сообщение
+     */
+    public void sendFileLinkData(FileLinkData fileLinkData) throws IOException{
+        write(fileLinkData);
     }
 }
