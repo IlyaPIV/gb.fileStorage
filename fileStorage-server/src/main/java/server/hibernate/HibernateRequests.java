@@ -117,14 +117,14 @@ public class HibernateRequests {
      * @return - ссылка на запись БД
      * @throws RuntimeException - в случае если кол-во записей в результате запроса не равно 1
      */
-    public static DirectoriesEntity getUserHomeDir(int userID) {
+    public static DirectoriesEntity getUserHomeDir(int userID) throws ServerCloudException{
         try (Session session = HibernateUtil.getSession()){
             session.beginTransaction();
             List<DirectoriesEntity> list = session.createQuery(queryDirectoriesFindByUser(), DirectoriesEntity.class)
                             .setParameter("userID", userID)
                             .list();
             session.getTransaction().commit();
-            if (list.size()!=1) throw new RuntimeException("Ошибка при получении данных их БД - не найдена запись");
+            if (list.size()!=1) throw new ServerCloudException("Ошибка при получении данных их БД - не найдена запись");
                 else return list.get(0);
         }
     }
@@ -316,6 +316,23 @@ public class HibernateRequests {
     }
 
     /**
+     * возвращает LinkEntity ссылки по переданному ID
+     * @param linkID - id в базе данных
+     * @return LinkEntity - ссылка с данными
+     * @throws ServerCloudException - ошибка выполнения запроса
+     */
+    public static LinksEntity getLinkByID(int linkID) throws ServerCloudException{
+        try (Session session = HibernateUtil.getSession()) {
+            session.beginTransaction();
+            LinksEntity link = session.get(LinksEntity.class, linkID);
+            session.getTransaction().commit();
+            return link;
+        } catch (Exception e) {
+            throw new ServerCloudException("Не удалось получить ссылку");
+        }
+    }
+
+    /**
      * подготавливает текст запроса поиска ссылок на конкретный файл
      * @return String - текст запроса
      */
@@ -376,6 +393,5 @@ public class HibernateRequests {
             throw new ServerCloudException("Не удалось удалить запись с ID = " + idFile);
         }
     }
-
 
 }

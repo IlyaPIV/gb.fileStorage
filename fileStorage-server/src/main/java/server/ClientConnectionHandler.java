@@ -26,7 +26,12 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         this.dbConnector = dbConnector;
     }
 
-    private void setUserSettings(String login) throws RuntimeException{
+    /**
+     * заполняет начальные настройки пользователя
+     * @param login - имя пользователя
+     * @throws ServerCloudException - ошибка работы с БД
+     */
+    private void setUserSettings(String login) throws ServerCloudException{
         DirectoriesEntity homeDir = DBConnector.getUserHomeDir(userID);
         log.debug("Ссылка на стартовую директорию: "+homeDir);
         this.currentDirectory = homeDir;
@@ -44,9 +49,6 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
         if (inMessage instanceof FileDownloadRequest fdr) {
 
             try {
-                /**
-                 * требуется поменять получение пути файла
-                 */
                 FileTransferData fileData =
                         new FileTransferData(filesStorage.getFileData(fdr.getFileID()), fdr.getFileName());
                 chc.writeAndFlush(fileData);
@@ -57,7 +59,7 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             }
 
         } else if (inMessage instanceof ServerFilesListRequest) {
-
+            log.debug("Incoming files list request");
             chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
 
         } else if (inMessage instanceof FileTransferData fileData) {
@@ -132,12 +134,36 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             } else {
                 chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to delete " +  (deleteRequest.isDir() ? "directory." : "file.")));
             }
+        } else if (inMessage instanceof FileLinkRequest request) {
+            log.debug("Attempt to get crypto link on selected item");
+            try {
+                chc.writeAndFlush(new FileLinkData(DBConnector.getCryptoLink(request.getLinkID())));
+                log.debug("Ссылка на файл сформирована и отправлена пользователю");
+            } catch (ServerCloudException e) {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to get link on file"));
+            }
+
+        } else if (inMessage instanceof FileLinkData data) {
+            log.debug("Attempt to add file to current dir by link");
+            try {
+                DBConnector.addLinkByCryptoString(DBConnector.decryptLink(data.getCryptoLink()), currentDirectory);
+                log.debug("Ссылка успешно добавлена в каталог пользователя.");
+                chc.writeAndFlush(new ServerFilesListData(filesStorage.getFilesOnServer(currentDirectory, usersHomeDirectory)));
+                chc.writeAndFlush(new DatabaseOperationResult(true, "Link was added to current directory"));
+            } catch (ServerCloudException e) {
+                chc.writeAndFlush(new DatabaseOperationResult(false, "Failed to add link in current dir"));
+            }
         } else {
             log.error("Unknown incoming message format!!!");
         }
 
     }
 
+    /**
+     * процедура пробует выполнить авторизацию пользователя
+     * @param request - сообщение с клиентского приложения
+     * @return подготовленное сообщение клиенту с результатом выполнения операции
+     */
     private AuthRegAnswer tryToAuthUser(AuthRegRequest request) {
 
         try {
@@ -145,16 +171,23 @@ public class ClientConnectionHandler extends SimpleChannelInboundHandler<CloudMe
             setUserSettings(request.getLogin());
             log.debug("Авторизация прошла успешно. Пользовательские настройки завершены.");
         } catch (Exception e) {
+            log.error("Ошибка авторизации пользователя");
             return new AuthRegAnswer(false, e.getMessage(), false);
         }
 
-        return new AuthRegAnswer(true,"all is ok", false);
+        return new AuthRegAnswer(true,"Authorization is ok", false);
     }
 
+    /**
+     * процедура пробует выполнить регистрацию нового пользователя
+     * @param request - сообщение с клиентского приложения
+     * @return - подготовленное сообщение киленту с результатом выполнения операции
+     */
     private AuthRegAnswer tryToRegUser(AuthRegRequest request) {
 
         try {
             dbConnector.registration(request.getLogin(), request.getPassword());
+            log.debug("Успешная регистрация");
         } catch (Exception e) {
             return new AuthRegAnswer(false, e.getMessage(), true);
         }

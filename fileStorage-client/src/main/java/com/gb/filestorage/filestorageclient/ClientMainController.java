@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import messages.AuthRegAnswer;
 import messages.AuthRegRequest;
 import messages.DeleteRequest;
+import messages.FileLinkData;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -446,7 +447,36 @@ public class ClientMainController implements Initializable {
         tryToDeleteOnServer(selectedFile);
     }
 
+    /**
+     * открывает окно для ввода ссылки на файл, чтобы добавить его в каталог пользователя
+     * если значение введено - отправляет запрос на сервер
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdAddFileLink(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Fill the field");
+        dialog.setHeaderText("Enter DB file's link");
+        dialog.setContentText("Link:");
 
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(this::tryAddLinkOnFile);
+    }
+
+    /**
+     *
+     */
+    public void showLinkFromServer(String link) {
+        Platform.runLater(()->{
+
+            TextInputDialog dialog = new TextInputDialog(link);
+            dialog.setTitle("Share the file");
+            dialog.setHeaderText("Crypt link to file");
+            dialog.setContentText("Link:");
+
+            dialog.showAndWait();
+        });
+    }
 
     /*
      *
@@ -485,7 +515,8 @@ public class ClientMainController implements Initializable {
 
                 log.debug("Opening auth/reg window");
             } catch (IOException e) {
-                log.error(e.getMessage());
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось соединиться с сервером", ButtonType.OK);
+                alert.showAndWait();
             }
         } else {
             closeNettyConnection();
@@ -680,6 +711,42 @@ public class ClientMainController implements Initializable {
         }
     }
 
+    /**
+     * отправляет запрос на сервер получить зашифрованную ссылку на файл/ссылку
+     * @param actionEvent - ни на что не влияет
+     */
+    public void getFileLink(ActionEvent actionEvent) {
+        ServerFile currentLink = serverFilesTable.getSelectionModel().getSelectedItem();
+        if (currentLink.isDir()) {
+            setInfoText("Can't get link on directory.", true);
+            return;
+        }
+        try {
+            nettyConnection.sendFileLinkRequest(currentLink.getLinkID());
+            log.debug("Запрос на получение ссылки из БД на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send getLink request.");
+            setInfoText("Failed to send getLink request.", true);
+        }
+    }
+
+    /**
+     * отправляет запрос на сервер на добавление ссылки на файл в текущую директорию пользователя
+     * @param link - строковое значение зашифрованной ссылки
+     */
+    private void tryAddLinkOnFile(String link) {
+        try {
+            nettyConnection.sendFileLinkData(new FileLinkData(link));
+            log.debug("Отправлена крипто-ссылка на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send link to server");
+            setInfoText("Failed to send link to server", true);
+        }
+
+    }
+
+
+
     /*
     * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================
     *
@@ -723,15 +790,11 @@ public class ClientMainController implements Initializable {
             terminalDisplay.clear();
         }
 
-
-
         try {
             terminalClient.start();
         } catch (IOException e) {
             setInfoText("ERROR START CONNECTION WITH SERVER");
         }
-
-
 
         if (terminalIsRunning) {
             terminalDisplay.appendText("\n");
@@ -757,37 +820,6 @@ public class ClientMainController implements Initializable {
 
         terminalClient.sendMsgToServer(textInCmd);
 
-    }
-
-
-
-    /**
-     * закрывает терминальное соединение с сервером - не работает корректно
-     */
-    private void closeTerminalConnection() {
-        try {
-            if (terminalClient!=null && terminalClient.isRunning()) {
-                terminalClient.stop();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
-     */
-    private void connectToServerIO() {
-        if (this.connection == null || this.connection.isSocketClosed()) {
-            this.connection = new NetworkConnection(this, "login", "pass");
-
-            boolean connected = connection.connectToServer();
-            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
-
-            connection.startWorkingThreadWithServer();
-        }
-
-        connection.tryToAuthOnServer();
     }
 
 
