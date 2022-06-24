@@ -11,4 +11,5 @@ module fileStorage.server {
     requires jakarta.xml.bind;
 
     opens server.hibernate.entity;
+    opens server.hibernate;
 }

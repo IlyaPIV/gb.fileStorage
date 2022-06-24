@@ -27,26 +27,6 @@ public class FilesStorage {
 
     }
 
-//    /**
-//     * подготавливает информацию о файле в API формате
-//     * @param path - путь к файлу
-//     * @param id - айди файла
-//     * @return ServerFile - инфо о файле в стандартизированном формате
-//     */
-//    private ServerFile prepareFileInfo(Path path, long id) {
-//        ServerFile sf = new ServerFile();
-//        sf.setFileName(path.getFileName().toString());
-//        sf.setServerID(id);
-//        sf.setDir(Files.isDirectory(path));
-//        try {
-//            sf.setSize(sf.isDir() ? -1L : Files.size(path));
-//            sf.setLastUpdate(LocalDateTime.ofInstant(Files.getLastModifiedTime(path).toInstant(), ZoneOffset.ofHours(0)));
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//        return sf;
-//    }
 
     /**
      * получение ссылки на хранилище файловое
@@ -107,6 +87,11 @@ public class FilesStorage {
         return list;
     }
 
+    /**
+     * подготавливает список вложенных директорий пользователя для отправки на клиентское приложение
+     * @param currentDirectory - текущая директория пользователя
+     * @return - список вложенных папок
+     */
     private List<ServerFile> prepareFoldersInside(DirectoriesEntity currentDirectory) {
         List<ServerFile> list = new ArrayList<>();
         int counter = 1;
@@ -132,6 +117,11 @@ public class FilesStorage {
         return list;
     }
 
+    /**
+     * подготавливает запись для возможности перехода вверх по дереву каталогов
+     * @param currentDirectory - текущая директория
+     * @return - ссылка-переход в каталог верхнего уровня
+     */
     private ServerFile prepareParentDirFile(DirectoriesEntity currentDirectory) {
         ServerFile parent = new ServerFile();
         parent.setDir(true);
@@ -163,7 +153,6 @@ public class FilesStorage {
      */
     public byte[] getFileData(long fileID) throws ServerCloudException, IOException {
 
-        //в будущем заменится на фактический путь к файлу из SQL
         Path pathToFile = Path.of(DIRECTORY).resolve(DBConnector.getServerPathToFile(fileID)).normalize();
 
         //проверки
@@ -253,12 +242,18 @@ public class FilesStorage {
         }
     }
 
+    /**
+     * удаляет физический файл
+     * @param fileName - имя файла
+     * @param dirName - имя папки где лежит
+     * @throws ServerCloudException - ошибка выполнения операции
+     */
     public void deleteRealFile(String fileName, String dirName) throws ServerCloudException{
         Path filePath = Path.of(DIRECTORY).normalize().resolve(dirName).resolve(fileName);
         try {
           Files.delete(filePath);
         } catch (IOException e) {
-            throw new ServerCloudException("Failed to delete file: " + filePath.toString());
+            throw new ServerCloudException("Failed to delete file: " + filePath);
         }
     }
 }

@@ -35,6 +35,10 @@ public class CryptoService {
         ivSpec = new IvParameterSpec(sec_bytes);
     }
 
+    /**
+     * возвращает ссылу на сервис
+     * @return ссылка
+     */
     public static CryptoService getService(){
         if (service==null) service = new CryptoService();
 
@@ -44,11 +48,9 @@ public class CryptoService {
 
     /**
      * зашифровывает строку
-     * @param inString
-     * @return
-     * @throws InvalidKeyException
-     * @throws IllegalBlockSizeException
-     * @throws BadPaddingException
+     * @param inString - входная незашифрованная строка
+     * @return String - зашифрованная строка
+     * @throws ServerCloudException - любая из ошибок выполнения шифрования
      */
     public String encryptString(String inString) throws ServerCloudException{
         byte[] inText = inString.getBytes(StandardCharsets.UTF_8);
@@ -68,11 +70,9 @@ public class CryptoService {
 
     /**
      * расшифровывает строку
-     * @param inString
-     * @return
-     * @throws InvalidKeyException
-     * @throws IllegalBlockSizeException
-     * @throws BadPaddingException
+     * @param inString - входная зашифрованная строка
+     * @return String - расшифрованная строка
+     * @throws ServerCloudException - любая из ошибок выполнения шифрования
      */
     public String decryptString(String inString) throws ServerCloudException {
 

@@ -117,14 +117,14 @@ public class HibernateRequests {
      * @return - ссылка на запись БД
      * @throws RuntimeException - в случае если кол-во записей в результате запроса не равно 1
      */
-    public static DirectoriesEntity getUserHomeDir(int userID) {
+    public static DirectoriesEntity getUserHomeDir(int userID) throws ServerCloudException{
         try (Session session = HibernateUtil.getSession()){
             session.beginTransaction();
             List<DirectoriesEntity> list = session.createQuery(queryDirectoriesFindByUser(), DirectoriesEntity.class)
                             .setParameter("userID", userID)
                             .list();
             session.getTransaction().commit();
-            if (list.size()!=1) throw new RuntimeException("Ошибка при получении данных их БД - не найдена запись");
+            if (list.size()!=1) throw new ServerCloudException("Ошибка при получении данных их БД - не найдена запись");
                 else return list.get(0);
         }
     }

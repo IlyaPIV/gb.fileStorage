@@ -1,7 +1,6 @@
 package server.hibernate;
 
 import lombok.extern.slf4j.Slf4j;
-import server.AuthService;
 import server.CryptoService;
 import server.FilesStorage;
 import server.ServerCloudException;
@@ -68,7 +67,14 @@ public class DBConnector implements AuthService {
      * ============================ SERVER COMMANDS SERVICE =========================
      */
 
-    public static DirectoriesEntity getUserHomeDir(int userID) throws RuntimeException{
+
+
+    /**
+     * возвращает начальную директорию пользователя
+     * @param userID - id пользователя в БД
+     * @return ссылку на директорию в БД
+     */
+    public static DirectoriesEntity getUserHomeDir(int userID) throws ServerCloudException{
         return HibernateRequests.getUserHomeDir(userID);
     }
 

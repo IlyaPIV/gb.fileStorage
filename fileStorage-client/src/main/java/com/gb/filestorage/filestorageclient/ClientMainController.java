@@ -463,6 +463,21 @@ public class ClientMainController implements Initializable {
         result.ifPresent(this::tryAddLinkOnFile);
     }
 
+    /**
+     *
+     */
+    public void showLinkFromServer(String link) {
+        Platform.runLater(()->{
+
+            TextInputDialog dialog = new TextInputDialog(link);
+            dialog.setTitle("Share the file");
+            dialog.setHeaderText("Crypt link to file");
+            dialog.setContentText("Link:");
+
+            dialog.showAndWait();
+        });
+    }
+
     /*
      *
      * ======================== МЕТОДЫ РАБОТЫ С СЕРВЕРОМ ==========================
@@ -500,7 +515,8 @@ public class ClientMainController implements Initializable {
 
                 log.debug("Opening auth/reg window");
             } catch (IOException e) {
-                log.error(e.getMessage());
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось соединиться с сервером", ButtonType.OK);
+                alert.showAndWait();
             }
         } else {
             closeNettyConnection();
@@ -774,15 +790,11 @@ public class ClientMainController implements Initializable {
             terminalDisplay.clear();
         }
 
-
-
         try {
             terminalClient.start();
         } catch (IOException e) {
             setInfoText("ERROR START CONNECTION WITH SERVER");
         }
-
-
 
         if (terminalIsRunning) {
             terminalDisplay.appendText("\n");
@@ -808,37 +820,6 @@ public class ClientMainController implements Initializable {
 
         terminalClient.sendMsgToServer(textInCmd);
 
-    }
-
-
-
-    /**
-     * закрывает терминальное соединение с сервером - не работает корректно
-     */
-    private void closeTerminalConnection() {
-        try {
-            if (terminalClient!=null && terminalClient.isRunning()) {
-                terminalClient.stop();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
-     */
-    private void connectToServerIO() {
-        if (this.connection == null || this.connection.isSocketClosed()) {
-            this.connection = new NetworkConnection(this, "login", "pass");
-
-            boolean connected = connection.connectToServer();
-            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
-
-            connection.startWorkingThreadWithServer();
-        }
-
-        connection.tryToAuthOnServer();
     }
 
 

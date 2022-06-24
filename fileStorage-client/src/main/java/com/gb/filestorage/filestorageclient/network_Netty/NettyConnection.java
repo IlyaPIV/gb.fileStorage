@@ -24,7 +24,6 @@ public class NettyConnection {
 
     private final ClientMainController clientUI;
 
-    private boolean isAuthorizated;
 
 
     public NettyConnection(ClientMainController UI) throws IOException {
@@ -69,6 +68,7 @@ public class NettyConnection {
                             clientUI.setInfoText(result.getMessage(), !result.isResult());
                         } else if (inMsg instanceof FileLinkData link) {
                             clientUI.setInfoText(link.getCryptoLink());
+                            clientUI.showLinkFromServer(link.getCryptoLink());
                         } else {
                             clientUI.setInfoText("unknown incoming message from server", true);
                         }
@@ -95,7 +95,7 @@ public class NettyConnection {
             /*
             тут будет обработка такого события
              */
-
+            clientUI.setInfoText("Файл с таким именем уже существует.", true);
         } else {
             try {
                 Files.write(newFilePath, inMsg.getData());
@@ -127,14 +127,6 @@ public class NettyConnection {
     private void write(CloudMessage message) throws IOException {
         outS.writeObject(message);
         outS.flush();
-    }
-
-    public boolean isAuthorizated() {
-        return isAuthorizated;
-    }
-
-    public void setAuthorizated(boolean authorizated) {
-        isAuthorizated = authorizated;
     }
 
     /**

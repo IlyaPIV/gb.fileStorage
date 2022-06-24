@@ -24,6 +24,7 @@ public class AuthRegWindow {
     @FXML
     public TextField loginField;
 
+    private Thread waitingThread;
 
 
     public void setMainController(ClientMainController clientMainController) {
@@ -35,29 +36,51 @@ public class AuthRegWindow {
         sendRequestToServer(true);
     }
 
+    /**
+     * отправляет запрос насервер
+     * @param isReg - признак операции - регистрация (true) / авторизация (false)
+     */
     private void sendRequestToServer(boolean isReg) {
         boolean wasSended = clientUI.SendAuthRegRequest(new AuthRegRequest(loginField.getText(), passwordField.getText(), isReg));
-
         if (wasSended) {
-            //тут будет обработчик ожидания ответа от сервера - надо брокировать интерфейс
+            synchronized (this) {
+                blockUI(true);
+                try {
+                    wait(10000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                blockUI(false);
+            }
         }
     }
 
+    /**
+     * обработчик нажатия кнопки Log in
+     * @param actionEvent - ни на что не виляет
+     */
     @FXML
     public void btnTryLog(ActionEvent actionEvent) {
         sendRequestToServer(false);
     }
 
+    /**
+     * обработка получения ответа от сервера
+     * @param answer - сообщение-ответ от сервера
+     */
     public void getAnswerFromServer(AuthRegAnswer answer) {
         /*
         * тут будет снятие блокировки ожидания
          */
+        synchronized (this) {
+            notify();
+        }
 
         if (answer.isResult()) {
             //ответ положительный
             if (answer.isOperationReg()) {
                 Platform.runLater(()->{
-                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Operation is OK");
                     alert.setHeaderText("New user was created on server. Now you can connect.");
                     alert.setContentText(answer.getMessage());
@@ -85,5 +108,12 @@ public class AuthRegWindow {
                 alert.showAndWait();
             });
         }
+    }
+
+    private void blockUI(boolean block) {
+        passwordField.setDisable(block);
+        loginField.setDisable(block);
+        btnLogin.setDisable(block);
+        btnRegistration.setDisable(block);
     }
 }
