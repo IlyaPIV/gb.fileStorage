@@ -1,4 +1,6 @@
-package server;
+package server.hibernate;
+
+import server.ServerCloudException;
 
 public interface AuthService {
 

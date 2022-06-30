@@ -24,7 +24,6 @@ public class NettyConnection {
 
     private final ClientMainController clientUI;
 
-    private boolean isAuthorizated;
 
 
     public NettyConnection(ClientMainController UI) throws IOException {
@@ -67,6 +66,11 @@ public class NettyConnection {
                             clientUI.GetAuthRegAnswer(answer);
                         } else if (inMsg instanceof DatabaseOperationResult result) {
                             clientUI.setInfoText(result.getMessage(), !result.isResult());
+                        } else if (inMsg instanceof FileLinkData link) {
+                            clientUI.setInfoText(link.getCryptoLink());
+                            clientUI.showLinkFromServer(link.getCryptoLink());
+                        } else {
+                            clientUI.setInfoText("unknown incoming message from server", true);
                         }
                     } catch (IOException e) {
                         log.error("Error with reading input channel");
@@ -91,6 +95,7 @@ public class NettyConnection {
             /*
             тут будет обработка такого события
              */
+            clientUI.setInfoText("Файл с таким именем уже существует.", true);
         } else {
             try {
                 Files.write(newFilePath, inMsg.getData());
@@ -122,14 +127,6 @@ public class NettyConnection {
     private void write(CloudMessage message) throws IOException {
         outS.writeObject(message);
         outS.flush();
-    }
-
-    public boolean isAuthorizated() {
-        return isAuthorizated;
-    }
-
-    public void setAuthorizated(boolean authorizated) {
-        isAuthorizated = authorizated;
     }
 
     /**
@@ -202,10 +199,46 @@ public class NettyConnection {
     }
 
     /**
-     * отправляет запрос на сервер
+     * отправляет запрос на сервер о создании нового каталога в текущей директории пользователя
      * @param newName - имя каталога на сервере
      */
     public void createNewDir(String newName) throws IOException{
         write(new NewDirRequest(newName));
+    }
+
+    /**
+     * отправляет запрос на переименование файла/ссылки на сервер
+     * @param linkID - id ссылки
+     * @param newName - новое имя
+     * @throws IOException - ошибка отправки сообщения
+     */
+    public void sendFileRenameRequest(int linkID, String newName) throws IOException{
+        write(new FileRenameRequest(linkID, newName));
+    }
+
+    /**
+     * отправляет запрос на удаление файла/папки на сервере в текущем каталоге пользователя
+     * @param deleteRequest - подготовленное сообщение-запрос
+     * @throws IOException - ошибка отправки сообщения
+     */
+    public void sendDeleteRequestOnServer(DeleteRequest deleteRequest) throws IOException{
+        write(deleteRequest);
+    }
+
+    /**
+     * отправляет на сервер запрос на получение зашифрованной ссылки
+     * @param linkID - id выбранной ссылки
+     */
+    public void sendFileLinkRequest(int linkID) throws IOException{
+        write(new FileLinkRequest(linkID));
+    }
+
+    /**
+     * Отправляет на сервер сообщение с сылкой на файл в БД.
+     * Если ссылка корректна - файл добавится в текущий каталог пользователя
+     * @param fileLinkData - подготовленное сообщение
+     */
+    public void sendFileLinkData(FileLinkData fileLinkData) throws IOException{
+        write(fileLinkData);
     }
 }

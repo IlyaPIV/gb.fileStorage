@@ -48,7 +48,7 @@ public class IOServer {
         this.serverSettings.setExecutorService(Executors.newCachedThreadPool());
 
         this.clients = new CopyOnWriteArrayList<>();
-        this.filesStorage = new FilesStorage();
+        this.filesStorage = FilesStorage.getFilesStorage();
         //logger
 
         //auth service
@@ -57,7 +57,6 @@ public class IOServer {
 
     /**
      * закрытие сервера
-     * @throws IOException
      */
     private void stopServer(){
 
@@ -85,7 +84,7 @@ public class IOServer {
 
     /**
      * запуск создания нового подключения клиента к серверу
-     * @throws IOException
+     * @throws IOException - ошибка
      */
     private void clientConnection() throws IOException{
         clientSocket = serverSettings.getServerSocket().accept();
@@ -94,7 +93,7 @@ public class IOServer {
 
     /**
      * возвращает серверные настройки
-     * @return
+     * @return ссылку на настройки
      */
     public ServerSettings getServerSettings() {
         return serverSettings;
@@ -109,8 +108,9 @@ public class IOServer {
     }
 
     /**
+     * НЕ ИСПОЛЬЗУЕТСЯ
      * добавление пользовательского соединения к серверу
-     * @param ch
+     * @param ch IO клиент хендлер
      */
     public void connectUser(IOClientHandler ch){
         System.out.println("New connection is activated.");
@@ -118,8 +118,9 @@ public class IOServer {
     }
 
     /**
+     * НЕ ИСПОЛЬЗУЕТСЯ
      * закрытие пользовательского соединения и удаление его из списка подключений
-     * @param ch
+     * @param ch - хендрел
      */
     public void disconnectUser(IOClientHandler ch){
         clients.remove(ch);

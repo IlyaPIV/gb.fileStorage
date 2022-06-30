@@ -23,7 +23,7 @@ public class NettyServer {
 
     public NettyServer(){
 
-        filesStorageService = new FilesStorage();
+        filesStorageService = FilesStorage.getFilesStorage();
 
         EventLoopGroup auth = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();

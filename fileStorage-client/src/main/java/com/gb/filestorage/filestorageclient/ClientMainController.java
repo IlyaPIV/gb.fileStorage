@@ -26,6 +26,8 @@ import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 import messages.AuthRegAnswer;
 import messages.AuthRegRequest;
+import messages.DeleteRequest;
+import messages.FileLinkData;
 import serverFiles.ServerFile;
 
 import java.io.IOException;
@@ -412,6 +414,70 @@ public class ClientMainController implements Initializable {
         result.ifPresent(this::tryToCreateNewFolderOnServer);
     }
 
+    /**
+     * обработчик нажатия кнопки переименования файла на сервере
+     * @param actionEvent - ни на что не влияет
+     */
+    @FXML
+    public void cmdRename(ActionEvent actionEvent) {
+
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+
+        if (!selectedFile.isDir()) {
+            TextInputDialog dialog = new TextInputDialog(selectedFile.getFileName());
+
+            dialog.setTitle("Fill the field");
+            dialog.setHeaderText("Enter new folder name:");
+            dialog.setContentText("DIR name:");
+
+            Optional<String> result = dialog.showAndWait();
+
+            result.ifPresent(this::tryToRenameLinkOnServer);
+        } else {
+            setInfoText("Can't rename DIR. Please, choose file", true);
+        }
+    }
+
+    /**
+     * обработчик нажатия кнопки удаления файла на сервере
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdDelete(ActionEvent actionEvent) {
+        ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+        tryToDeleteOnServer(selectedFile);
+    }
+
+    /**
+     * открывает окно для ввода ссылки на файл, чтобы добавить его в каталог пользователя
+     * если значение введено - отправляет запрос на сервер
+     * @param actionEvent - ни на что не влияет
+     */
+    public void cmdAddFileLink(ActionEvent actionEvent) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Fill the field");
+        dialog.setHeaderText("Enter DB file's link");
+        dialog.setContentText("Link:");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(this::tryAddLinkOnFile);
+    }
+
+    /**
+     *
+     */
+    public void showLinkFromServer(String link) {
+        Platform.runLater(()->{
+
+            TextInputDialog dialog = new TextInputDialog(link);
+            dialog.setTitle("Share the file");
+            dialog.setHeaderText("Crypt link to file");
+            dialog.setContentText("Link:");
+
+            dialog.showAndWait();
+        });
+    }
+
     /*
      *
      * ======================== МЕТОДЫ РАБОТЫ С СЕРВЕРОМ ==========================
@@ -449,7 +515,8 @@ public class ClientMainController implements Initializable {
 
                 log.debug("Opening auth/reg window");
             } catch (IOException e) {
-                log.error(e.getMessage());
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось соединиться с сервером", ButtonType.OK);
+                alert.showAndWait();
             }
         } else {
             closeNettyConnection();
@@ -580,7 +647,7 @@ public class ClientMainController implements Initializable {
      * @param newName - имя новой папки
      */
     public void tryToCreateNewFolderOnServer(String newName) {
-        if (checkServersTableForDuplicateDirName(newName)) {
+        if (checkServersTableForDuplicateName(newName, true)) {
             setInfoText("New DIR was created!", false);
             try {
                 nettyConnection.createNewDir(newName);
@@ -592,21 +659,93 @@ public class ClientMainController implements Initializable {
     }
 
     /**
+     * попытка переименовать выбранный файл на сервере
+     * @param newName - новое имя файла
+     */
+    private void tryToRenameLinkOnServer(String newName) {
+        if (checkServersTableForDuplicateName(newName, false)) {
+            try {
+                ServerFile selectedFile = serverFilesTable.getSelectionModel().getSelectedItem();
+                nettyConnection.sendFileRenameRequest(selectedFile.getLinkID(), newName);
+            } catch (IOException e) {
+                setInfoText(e.getMessage(), true);
+                log.error("Ошибка отправки запроса на сервер для переименования файла");
+            }
+        } else setInfoText("This name is already used!", true);
+    }
+
+    /**
      * проверяет текущую директорию на серверной стороне на наличие дубликата по имени папки
      * @param newName - имя новой папки
      * @return - true если имя доступно
      * false если папка с таким именем уже существует
      */
-    private boolean checkServersTableForDuplicateDirName(String newName) {
+    private boolean checkServersTableForDuplicateName(String newName, boolean isDir) {
 
         for (ServerFile sf:
              serverFilesTable.getItems()) {
 
-            if (sf.getFileName().equals(newName) && sf.isDir()) return false;
+            if (sf.getFileName().equals(newName) && sf.isDir()==isDir) return false;
         }
 
         return true;
     }
+
+    /**
+     * подготавливает сообщение-запрос на удаление к отправке на сервер
+     * @param selectedFile - выбранный файл/директория в папке на сервере
+     */
+    private void tryToDeleteOnServer(ServerFile selectedFile) {
+        if (selectedFile.isDir() && selectedFile.getServerID()==0) {
+            log.debug("Попытка удалить корневой каталог.");
+            setInfoText("Can't delete parent directory.", true);
+        } else {
+            try {
+                nettyConnection.sendDeleteRequestOnServer(new DeleteRequest(selectedFile.isDir()
+                        , selectedFile.isDir() ? (int) selectedFile.getServerID() : selectedFile.getLinkID()));
+                log.debug("Запрос на удаление успешно отправлен на сервер.");
+            } catch (IOException e) {
+                log.error("Failed to send delete request");
+                setInfoText("Failed to send delete request", true);
+            }
+        }
+    }
+
+    /**
+     * отправляет запрос на сервер получить зашифрованную ссылку на файл/ссылку
+     * @param actionEvent - ни на что не влияет
+     */
+    public void getFileLink(ActionEvent actionEvent) {
+        ServerFile currentLink = serverFilesTable.getSelectionModel().getSelectedItem();
+        if (currentLink.isDir()) {
+            setInfoText("Can't get link on directory.", true);
+            return;
+        }
+        try {
+            nettyConnection.sendFileLinkRequest(currentLink.getLinkID());
+            log.debug("Запрос на получение ссылки из БД на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send getLink request.");
+            setInfoText("Failed to send getLink request.", true);
+        }
+    }
+
+    /**
+     * отправляет запрос на сервер на добавление ссылки на файл в текущую директорию пользователя
+     * @param link - строковое значение зашифрованной ссылки
+     */
+    private void tryAddLinkOnFile(String link) {
+        try {
+            nettyConnection.sendFileLinkData(new FileLinkData(link));
+            log.debug("Отправлена крипто-ссылка на сервер");
+        } catch (IOException e) {
+            log.error("Failed to send link to server");
+            setInfoText("Failed to send link to server", true);
+        }
+
+    }
+
+
 
     /*
     * ========================= НЕ ИСПОЛЬЗУЕМЫЕ БОЛЕЕ МЕТОДЫ ======================
@@ -651,15 +790,11 @@ public class ClientMainController implements Initializable {
             terminalDisplay.clear();
         }
 
-
-
         try {
             terminalClient.start();
         } catch (IOException e) {
             setInfoText("ERROR START CONNECTION WITH SERVER");
         }
-
-
 
         if (terminalIsRunning) {
             terminalDisplay.appendText("\n");
@@ -685,35 +820,6 @@ public class ClientMainController implements Initializable {
 
         terminalClient.sendMsgToServer(textInCmd);
 
-    }
-
-    /**
-     * закрывает терминальное соединение с сервером - не работает корректно
-     */
-    private void closeTerminalConnection() {
-        try {
-            if (terminalClient!=null && terminalClient.isRunning()) {
-                terminalClient.stop();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * инициирует настройки сетевого подключения и пробует установить соединение с сервером (IO connection)
-     */
-    private void connectToServerIO() {
-        if (this.connection == null || this.connection.isSocketClosed()) {
-            this.connection = new NetworkConnection(this, "login", "pass");
-
-            boolean connected = connection.connectToServer();
-            setInfoText( connected ? "CONNECTION TO SERVER CREATED" : "CONNECTION TO SERVER FAILED");
-
-            connection.startWorkingThreadWithServer();
-        }
-
-        connection.tryToAuthOnServer();
     }
 
 
